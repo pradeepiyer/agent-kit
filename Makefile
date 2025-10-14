@@ -7,7 +7,7 @@ help:
 	@echo "General:"
 	@echo "  test         - Run test suite with coverage (excludes integration)"
 	@echo "  test-integration - Run integration tests (requires API keys)"
-	@echo "  install      - Install hello-agent in development mode"
+	@echo "  install      - Install agent-kit in development mode"
 	@echo "  clean        - Remove build artifacts and cache files"
 	@echo "  lint         - Run linter and fix issues with ruff and mypy"
 	@echo "  sync-deps    - Sync uv dependencies and lock file"
@@ -34,7 +34,7 @@ test:
 test-integration:
 	uv run pytest tests/ -v -m integration
 
-# Install hello-agent in development mode
+# Install agent-kit in development mode
 install:
 	uv pip install -e .
 
@@ -73,24 +73,24 @@ sync-deps:
 # Run interactive chat console
 console:
 	@echo "💬 Starting interactive chat console..."
-	uv run hello-agent
+	uv run agent-kit
 
 # Count lines of code in the repository
 wc:
 	@echo "Line count by file type:"
 	@echo ""
 	@echo "Python files by component:"
-	@echo "  hello_agent/ components (dynamically detected):"
-	@for dir in $$(find ./hello_agent -type d -mindepth 1 | sort); do \
+	@echo "  agent_kit/ components (dynamically detected):"
+	@for dir in $$(find ./agent_kit -type d -mindepth 1 | sort); do \
 		if [ -n "$$(find $$dir -maxdepth 1 -name "*.py" -type f)" ]; then \
-			component=$$(echo $$dir | sed 's|^\./hello_agent/||'); \
+			component=$$(echo $$dir | sed 's|^\./agent_kit/||'); \
 			count=$$(find $$dir -maxdepth 1 -name "*.py" -type f | xargs wc -l 2>/dev/null | tail -1 | awk '{print $$1}'); \
 			[ "$$count" != "0" ] && echo "    $$component/: $$count lines"; \
 		fi \
 	done
 	@echo ""
-	@echo "  hello_agent/ total:"
-	@find ./hello_agent -name "*.py" -type f | xargs wc -l | tail -1 | awk '{print "   " $$1 " lines"}'
+	@echo "  agent_kit/ total:"
+	@find ./agent_kit -name "*.py" -type f | xargs wc -l | tail -1 | awk '{print "   " $$1 " lines"}'
 	@echo ""
 	@echo "  tests/ (test framework):"
 	@if [ -d "./tests" ]; then \
@@ -132,14 +132,14 @@ build-all:
 # Show package information
 package-info:
 	@echo "📋 Package Information:"
-	@echo "  Name: hello-agent"
+	@echo "  Name: agent-kit"
 	@echo "  Version: $$(grep '^version' pyproject.toml | cut -d'"' -f2)"
-	@echo "  Entry point: hello-agent -> hello_agent.main:main"
+	@echo "  Entry point: agent-kit -> agent_kit.main:main"
 	@echo ""
 	@echo "📁 Package structure:"
-	@echo "  hello_agent/           - Main package"
-	@echo "  hello_agent/data/      - Package data (config, prompts)"
-	@echo "  hello_agent/main.py    - CLI entry point"
+	@echo "  agent_kit/           - Main package"
+	@echo "  agent_kit/data/      - Package data (config, prompts)"
+	@echo "  agent_kit/main.py    - CLI entry point"
 	@echo ""
 	@if [ -d "dist" ]; then \
 		echo "📦 Built packages:"; \
