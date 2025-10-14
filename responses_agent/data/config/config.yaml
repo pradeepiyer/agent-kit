@@ -1,0 +1,63 @@
+# Example configuration file for hello-agent
+# Copy this file to config.yaml and customize for your environment
+
+# Connection Configuration (Global Defaults)
+# These settings apply to all clients that support them unless overridden
+connection:
+  pool_size: 3                    # Default number of connections in pool
+  request_timeout: 120            # Default request timeout in seconds
+  retry_attempts: 3               # Default number of retry attempts
+
+# OpenAI Configuration with Connection Pooling
+openai:
+  # Core API settings
+  api_key: "${OPENAI_API_KEY}"  # set via OPENAI_API_KEY env var
+  model: "gpt-5-mini"           # Default model
+  reasoning_effort: "medium"    # Default: minimal (fast) | medium (balanced) | high (deep)
+  output_token_ratio: 0.25      # Use 25% of total context for output
+
+  # Total context window limits (input + output including reasoning)
+  model_limits:
+    gpt-5: 400000
+    gpt-5-mini: 400000
+    gpt-5-nano: 400000
+    default: 128000
+
+  # Function-specific model overrides (agent/function -> model)
+  function_models:
+    "hello/hello": "gpt-5-mini"
+
+  # Use high effort for complex analysis tasks, minimal for simple operations
+  function_reasoning:
+    "hello/hello": "minimal"   # Simple greeting doesn't need deep thinking
+
+  # Reasoning summary configuration
+  reasoning_summary: true         # true = enable summaries with auto mode (default: false)
+
+  # Connection pool overrides
+  pool_size: 8                    # Override: Higher for frequent use
+
+  # Debug prompt configuration (optional - disabled by default)
+  debug_prompts:
+    enabled: false                       # Set to true to save prompts for debugging
+    directory: "/tmp/hello-agent-prompts"  # Where to save prompt files
+    max_files: 100                       # Keep last N prompt files
+
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(levelname)s - [%(name)s - %(filename)s:%(lineno)d] - %(message)s"
+  datefmt: "%m-%d %H:%M:%S"  # Short format: MM-DD HH:MM:SS
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# Agent Configuration (Global Defaults)
+# These settings apply to all agents unless overridden in specific agent configs
+agents:
+  max_iterations: 20               # Maximum tool-calling iterations for agents
+  max_parallel_tools: 5            # Maximum parallel tool executions
+
+# Hello Agent Configuration
+hello:
+  max_iterations: 10              # Override global max_iterations for hello agent (increased for web search)

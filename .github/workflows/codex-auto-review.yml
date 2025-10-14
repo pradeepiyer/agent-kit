@@ -1,0 +1,54 @@
+name: Codex Auto Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+env:
+  CODEX_TRIGGER: "@codex"
+
+jobs:
+  trigger-codex:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      CODEX_PAT: ${{ secrets.CODEX_TRIGGER_PAT }}
+    steps:
+      - name: Check PAT availability
+        id: check-pat
+        run: |
+          if [ -n "${{ env.CODEX_PAT }}" ]; then
+            echo "has_pat=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_pat=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate PAT (optional)
+        if: steps.check-pat.outputs.has_pat == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CODEX_TRIGGER_PAT }}
+          script: |
+            const { data: me } = await github.request('GET /user');
+            core.info(`Using PAT for user: ${me.login}`);
+
+      - name: Trigger Codex via comment (PAT)
+        if: steps.check-pat.outputs.has_pat == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.CODEX_TRIGGER_PAT }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- codex-auto-trigger -->
+            ${{ env.CODEX_TRIGGER }} please review this PR.
+
+      - name: Trigger Codex via comment (GITHUB_TOKEN fallback)
+        if: steps.check-pat.outputs.has_pat == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ github.token }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- codex-auto-trigger -->
+            ${{ env.CODEX_TRIGGER }} please review this PR.
