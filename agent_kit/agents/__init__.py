@@ -1,4 +1,4 @@
-"""Agent implementations for responses-agent."""
+"""Agent implementations for agent-kit."""
 
 from .base_agent import BaseAgent
 

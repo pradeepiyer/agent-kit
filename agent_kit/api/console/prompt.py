@@ -34,7 +34,7 @@ class Prompt:
             readline.set_completer_delims(" \t\n")
 
             # Set up history file
-            histfile = os.path.join(os.path.expanduser("~/.responses-agent"), ".history")
+            histfile = os.path.join(os.path.expanduser("~/.agent-kit"), ".history")
             os.makedirs(os.path.dirname(histfile), exist_ok=True)
             try:
                 readline.read_history_file(histfile)

@@ -1,5 +1,5 @@
 """
-Responses Agent CLI - Agent framework built on OpenAI Responses API.
+Agent Kit CLI - Agent framework built on OpenAI Responses API.
 
 Main entry point for the application with interactive chat mode.
 """
@@ -14,14 +14,14 @@ import typer
 
 from .api.console import get_console, run_console
 
-app = typer.Typer(name="responses-agent", help="Agent Framework built on OpenAI Responses API")
+app = typer.Typer(name="agent-kit", help="Agent Framework built on OpenAI Responses API")
 
 
 @app.command()
 def init(force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing configuration")):
-    """Initialize Responses Agent configuration."""
+    """Initialize Agent Kit configuration."""
     # Check if configuration already exists
-    user_config_dir = Path.home() / ".responses-agent"
+    user_config_dir = Path.home() / ".agent-kit"
     config_file = user_config_dir / "config.yaml"
 
     if config_file.exists() and not force:
@@ -31,7 +31,7 @@ def init(force: bool = typer.Option(False, "--force", "-f", help="Overwrite exis
     # Create configuration directory
     user_config_dir.mkdir(parents=True, exist_ok=True)
 
-    get_console().print("[bold green]Responses Agent Configuration Setup[/bold green]\n")
+    get_console().print("[bold green]Agent Kit Configuration Setup[/bold green]\n")
 
     # Read the config template from package data
     config_resource = files("agent_kit.data.config") / "config.yaml"

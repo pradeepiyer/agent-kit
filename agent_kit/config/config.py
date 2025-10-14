@@ -1,4 +1,4 @@
-"""Global configuration management for Responses Agent Framework.
+"""Global configuration management for Agent Kit Framework.
 
 Hard dependencies are imported eagerly to fail fast if missing and
 to avoid surprising runtime ImportErrors due to lazy imports.
@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .loader import ConfigLoader
-from .models import ResponsesAgentConfig
+from .models import AgentKitConfig
 
 # Avoid importing client modules at import time to prevent circular imports
 # during test discovery (clients import config, and config.__init__ imports this module).
@@ -20,7 +20,7 @@ if TYPE_CHECKING:  # pragma: no cover - types only
     from agent_kit.clients.openai_client import OpenAIClient
 
 # Global configuration instance
-_config: ResponsesAgentConfig | None = None
+_config: AgentKitConfig | None = None
 _config_file_path: Path | None = None
 
 # Global client instances
@@ -30,23 +30,23 @@ _openai_client: "OpenAIClient | None" = None
 _config_lock = asyncio.Lock()
 
 
-def load_config_from_file() -> ResponsesAgentConfig:
+def load_config_from_file() -> AgentKitConfig:
     """Load configuration from YAML file synchronously (no client initialization).
 
     Checks for config in this order:
-    1. RESPONSES_AGENT_CONFIG environment variable (if set)
-    2. ~/.responses-agent/config.yaml (default location)
+    1. AGENT_KIT_CONFIG environment variable (if set)
+    2. ~/.agent-kit/config.yaml (default location)
     3. Built-in defaults (if no file exists)
 
     Returns:
-        ResponsesAgentConfig instance with settings from file or defaults.
+        AgentKitConfig instance with settings from file or defaults.
     """
     config_loader = ConfigLoader()
     config_file = config_loader.find_config_file()
     return config_loader.load_config(config_file)
 
 
-async def setup_configuration() -> ResponsesAgentConfig:
+async def setup_configuration() -> AgentKitConfig:
     """Initialize global configuration, logging, and all clients."""
     global _config, _config_file_path
 
@@ -63,10 +63,10 @@ async def setup_configuration() -> ResponsesAgentConfig:
             root_logger.handlers.clear()
 
             # Create rotating file handler
-            log_dir = Path.home() / ".responses-agent" / "logs"
+            log_dir = Path.home() / ".agent-kit" / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             file_handler = logging.handlers.RotatingFileHandler(
-                log_dir / "responses-agent.log",
+                log_dir / "agent-kit.log",
                 maxBytes=_config.logging.max_file_size,
                 backupCount=_config.logging.backup_count,
             )
@@ -83,7 +83,7 @@ async def setup_configuration() -> ResponsesAgentConfig:
         return _config
 
 
-def get_config() -> ResponsesAgentConfig:
+def get_config() -> AgentKitConfig:
     """Get the global configuration instance."""
     if _config is None:
         raise RuntimeError("Configuration not initialized. Call await setup_configuration() first.")

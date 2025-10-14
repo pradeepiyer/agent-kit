@@ -1,5 +1,5 @@
 {
-  "include": ["responses_agent"],
+  "include": ["agent_kit"],
   "exclude": [
     "tests",
     "scripts"

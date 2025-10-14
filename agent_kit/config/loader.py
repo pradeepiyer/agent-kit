@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import yaml
 
-from .models import ResponsesAgentConfig
+from .models import AgentKitConfig
 
 
 class ConfigLoader:
@@ -53,7 +53,7 @@ class ConfigLoader:
         return next(
             (
                 path
-                for path in (config_paths or ResponsesAgentConfig.get_default_config_paths())
+                for path in (config_paths or AgentKitConfig.get_default_config_paths())
                 if path.exists() and path.is_file()
             ),
             None,
@@ -76,7 +76,7 @@ class ConfigLoader:
     @classmethod
     def load_config(
         cls, config_file: Path | None = None, config_data: dict[str, Any] | None = None
-    ) -> ResponsesAgentConfig:
+    ) -> AgentKitConfig:
         """Load configuration from multiple sources with precedence."""
         final_config: dict[str, Any] = {}
 
@@ -104,7 +104,7 @@ class ConfigLoader:
         cls._apply_connection_defaults(final_config)
 
         # 5. Validate and create the configuration object
-        return ResponsesAgentConfig(**final_config)
+        return AgentKitConfig(**final_config)
 
     @classmethod
     def _apply_connection_defaults(cls, config: dict[str, Any]) -> None:
@@ -135,6 +135,6 @@ class ConfigLoader:
 
 
 # Convenience function for loading configuration
-def load_config(config_file: Path | None = None, config_data: dict[str, Any] | None = None) -> ResponsesAgentConfig:
+def load_config(config_file: Path | None = None, config_data: dict[str, Any] | None = None) -> AgentKitConfig:
     """Convenience function to load configuration."""
     return ConfigLoader.load_config(config_file=config_file, config_data=config_data)

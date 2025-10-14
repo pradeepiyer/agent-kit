@@ -1,4 +1,4 @@
-"""Shared test fixtures and mocks for responses-agent tests."""
+"""Shared test fixtures and mocks for agent-kit tests."""
 
 import asyncio
 from pathlib import Path

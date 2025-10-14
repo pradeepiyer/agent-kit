@@ -1,1 +1,1 @@
-"""Unit tests for responses-agent framework."""
+"""Unit tests for agent-kit framework."""

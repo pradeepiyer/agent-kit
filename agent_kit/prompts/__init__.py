@@ -1,4 +1,4 @@
-"""Prompt management system for responses-agent."""
+"""Prompt management system for agent-kit."""
 
 from .loader import PromptLoader
 from .models import PromptConfig, PromptParameter

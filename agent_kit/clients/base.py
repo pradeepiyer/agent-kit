@@ -1,5 +1,5 @@
 """
-Base client utilities for responses-agent.
+Base client utilities for agent-kit.
 
 Provides connection pooling and OpenAI client factory.
 """

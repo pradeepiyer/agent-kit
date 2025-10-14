@@ -1,4 +1,4 @@
-"""Core configuration models for responses-agent-framework."""
+"""Core configuration models for agent-kit."""
 
 from enum import Enum
 from pathlib import Path
@@ -21,7 +21,7 @@ class DebugPromptConfig(BaseModel):
     """Configuration for prompt debugging."""
 
     enabled: bool = Field(default=False, description="Enable saving prompts to temp files")
-    directory: str = Field(default="/tmp/responses-agent-prompts", description="Directory for saving prompts")
+    directory: str = Field(default="/tmp/agent-kit-prompts", description="Directory for saving prompts")
     max_files: int = Field(default=100, ge=1, description="Maximum number of prompt files to keep")
 
 
@@ -113,8 +113,8 @@ class HelloConfig(BaseModel):
     )
 
 
-class ResponsesAgentConfig(BaseModel):
-    """Main configuration for responses-agent-framework application."""
+class AgentKitConfig(BaseModel):
+    """Main configuration for agent-kit application."""
 
     connection: ConnectionConfig = Field(..., description="Global connection defaults")
     agents: AgentsConfig = Field(..., description="Global agent configuration defaults")
@@ -136,6 +136,6 @@ class ResponsesAgentConfig(BaseModel):
     def get_default_config_paths(cls) -> list[Path]:
         """Get default configuration file paths to search."""
         return [
-            Path.home() / ".responses-agent" / "config.yaml",  # User config (highest priority)
+            Path.home() / ".agent-kit" / "config.yaml",  # User config (highest priority)
             Path.cwd() / "config.yaml",  # Project root
         ]

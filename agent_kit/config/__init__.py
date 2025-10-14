@@ -1,4 +1,4 @@
-"""Configuration management for responses-agent."""
+"""Configuration management for agent-kit."""
 
 from .config import (
     close_all_clients,
@@ -11,8 +11,8 @@ from .config import (
 from .loader import ConfigLoader
 from .models import (
     AgentsConfig,
+    AgentKitConfig,
     ConnectionConfig,
-    ResponsesAgentConfig,
     HelloConfig,
     LoggingConfig,
     LogLevel,
@@ -21,13 +21,13 @@ from .models import (
 
 __all__ = [
     "AgentsConfig",
+    "AgentKitConfig",
     "ConfigLoader",
     "ConnectionConfig",
     "HelloConfig",
     "LogLevel",
     "LoggingConfig",
     "OpenAIConfig",
-    "ResponsesAgentConfig",
     "close_all_clients",
     "close_openai_client",
     "get_config",

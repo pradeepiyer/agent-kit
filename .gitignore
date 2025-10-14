@@ -38,7 +38,7 @@ htmlcov/
 # Logs
 *.log
 logs/
-.responses-agent/logs/
+.agent-kit/logs/
 
 # Environment variables
 .env
@@ -55,9 +55,9 @@ logs/
 .ipynb_checkpoints
 
 # Project specific
-.responses-agent/.history
+.agent-kit/.history
 /tmp/
 *.tmp
 
 # Debug files
-/tmp/responses-agent-prompts/
+/tmp/agent-kit-prompts/
