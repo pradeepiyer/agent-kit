@@ -50,7 +50,14 @@ class ConfigLoader:
     @classmethod
     def find_config_file(cls, config_paths: list[Path] | None = None) -> Path | None:
         """Find the first existing configuration file from the search paths."""
-        return next((path for path in (config_paths or ResponsesAgentConfig.get_default_config_paths()) if path.exists() and path.is_file()), None)
+        return next(
+            (
+                path
+                for path in (config_paths or ResponsesAgentConfig.get_default_config_paths())
+                if path.exists() and path.is_file()
+            ),
+            None,
+        )
 
     @classmethod
     def load_default_config(cls) -> dict[str, Any]:

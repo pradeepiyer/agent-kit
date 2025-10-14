@@ -59,7 +59,11 @@ def format_tool_output(output_str: str) -> list[str]:
 
             elif isinstance(value, int | float):
                 formatted_key = key.replace("_", " ")
-                lines.append(f"  • {formatted_key}: {value:,}" if isinstance(value, int) and value > 1000 else f"  • {formatted_key}: {value}")
+                lines.append(
+                    f"  • {formatted_key}: {value:,}"
+                    if isinstance(value, int) and value > 1000
+                    else f"  • {formatted_key}: {value}"
+                )
 
             elif isinstance(value, bool):
                 formatted_key = key.replace("_", " ")

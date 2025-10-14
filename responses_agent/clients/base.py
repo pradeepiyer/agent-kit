@@ -107,7 +107,9 @@ class ConnectionPool:
                         conn.is_in_use = True
                         return conn
                 if (elapsed := loop.time() - start_time) >= timeout:
-                    raise TimeoutError(f"All {len(self.connections)} connections are busy after waiting {elapsed:.1f}s (timeout: {timeout}s)")
+                    raise TimeoutError(
+                        f"All {len(self.connections)} connections are busy after waiting {elapsed:.1f}s (timeout: {timeout}s)"
+                    )
                 try:
                     await asyncio.wait_for(self.pool_condition.wait(), timeout=min(1.0, timeout - elapsed))
                 except TimeoutError:

@@ -52,7 +52,11 @@ class HelloAgent(BaseAgent):
         if hasattr(response, "output_text") and response.output_text:
             logger.info(f"Successfully processed query: {response.output_text[:100]}")
             return response.output_text
-        elif hasattr(response, "output") and response.output and (text_items := [item for item in response.output if hasattr(item, "type") and item.type == "text"]):
+        elif (
+            hasattr(response, "output")
+            and response.output
+            and (text_items := [item for item in response.output if hasattr(item, "type") and item.type == "text"])
+        ):
             if text_items and hasattr(text_items[0], "text"):
                 logger.info(f"Successfully extracted text from response: {text_items[0].text[:100]}")
                 return text_items[0].text

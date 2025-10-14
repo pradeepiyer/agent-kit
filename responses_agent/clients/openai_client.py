@@ -92,7 +92,9 @@ class OpenAIClient:
 
             # Calculate max_output_tokens dynamically if not provided
             if not max_output_tokens:
-                context_limit = self.config.model_limits.get(model or self.config.model, self.config.model_limits.get("default", 128000))
+                context_limit = self.config.model_limits.get(
+                    model or self.config.model, self.config.model_limits.get("default", 128000)
+                )
                 max_output_tokens = int(context_limit * self.config.output_token_ratio)
 
             # Direct SDK call with typed parameters - no dict building

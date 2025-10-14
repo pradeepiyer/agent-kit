@@ -45,10 +45,20 @@ class BaseAgent(ABC):
         if hasattr(response, "usage"):
             usage = response.usage
             tokens_info = f"model={self.client.config.model}, input={usage.input_tokens}"
-            if hasattr(usage, "input_tokens_details") and (details := usage.input_tokens_details) and hasattr(details, "cached_tokens") and details.cached_tokens > 0:
+            if (
+                hasattr(usage, "input_tokens_details")
+                and (details := usage.input_tokens_details)
+                and hasattr(details, "cached_tokens")
+                and details.cached_tokens > 0
+            ):
                 tokens_info += f" (cached={details.cached_tokens})"
             tokens_info += f", output={usage.output_tokens}"
-            if hasattr(usage, "output_tokens_details") and (details := usage.output_tokens_details) and hasattr(details, "reasoning_tokens") and details.reasoning_tokens > 0:
+            if (
+                hasattr(usage, "output_tokens_details")
+                and (details := usage.output_tokens_details)
+                and hasattr(details, "reasoning_tokens")
+                and details.reasoning_tokens > 0
+            ):
                 tokens_info += f" (reasoning={details.reasoning_tokens})"
             tokens_info += f", total={usage.total_tokens}, iteration={iteration + 1}/{max_iterations}"
             if response_id:
@@ -70,7 +80,11 @@ class BaseAgent(ABC):
                     )
 
         if hasattr(response, "status") and response.status == "incomplete":
-            reason = getattr(response.incomplete_details, "reason", "unknown") if hasattr(response, "incomplete_details") else "unknown"
+            reason = (
+                getattr(response.incomplete_details, "reason", "unknown")
+                if hasattr(response, "incomplete_details")
+                else "unknown"
+            )
             self.logger.warning(
                 f"Response incomplete despite auto-truncation: {reason} at iteration {iteration + 1}. "
                 f"This may indicate the response itself exceeded token limits."
@@ -119,7 +133,11 @@ class BaseAgent(ABC):
                 args: dict[str, Any] = json.loads(item.arguments) if item.arguments else {}
                 self.logger.info(f"Processing tool call: {item.name}")
                 try:
-                    tool_result = await tool_executor(item.name, args) if tool_executor else {"error": "Tool executor not provided"}
+                    tool_result = (
+                        await tool_executor(item.name, args)
+                        if tool_executor
+                        else {"error": "Tool executor not provided"}
+                    )
                     if not tool_executor:
                         self.logger.error(f"Tool executor not provided for {item.name}")
                 except Exception as e:
@@ -164,13 +182,17 @@ class BaseAgent(ABC):
             await emit_progress(f"Processing iteration {iteration + 1}/{max_iterations}")
 
             # Disable tools on last iteration if we have a response format
-            tool_choice, tools_to_pass = ("none", None) if response_format and iteration == max_iterations - 1 else (None, tools)
+            tool_choice, tools_to_pass = (
+                ("none", None) if response_format and iteration == max_iterations - 1 else (None, tools)
+            )
 
             model = reasoning_effort = None
             if self.last_prompt_config:
                 function_key = f"{self.last_prompt_config.agent}/{self.last_prompt_config.function}"
                 model = self.client.config.function_models.get(function_key)
-                reasoning_effort = self.client.config.function_reasoning.get(function_key, self.client.config.reasoning_effort)
+                reasoning_effort = self.client.config.function_reasoning.get(
+                    function_key, self.client.config.reasoning_effort
+                )
 
             response = await self.client.responses_create(
                 iteration=iteration + 1,  # Use 1-based iteration for display
