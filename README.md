@@ -16,11 +16,11 @@ Developer toolkit for building AI agents with OpenAI Responses API.
 ```bash
 # Install and setup
 uv sync
-agent-kit init
+uv run agent-kit init
 export OPENAI_API_KEY="sk-..."
 
 # Run console
-agent-kit
+uv run agent-kit
 
 # Try commands
 /hello Alice
@@ -83,7 +83,7 @@ class MyAgent(BaseAgent):
             tools=get_tool_definitions(),
             tool_executor=execute_tool,
             previous_response_id=self.last_response_id if continue_conversation else None,
-            response_format=None,  # Or MyResponse for structured output
+            response_format=MyResponse,  # structured output
             max_iterations=10
         )
 
@@ -126,26 +126,24 @@ async def my_action(self, query: str, session_id: str) -> str:
 ```yaml
 openai:
   api_key: "${OPENAI_API_KEY}"
-  model: "gpt-4o"
+  model: "gpt-5-nano"
   pool_size: 8
-  reasoning_effort: "medium"
 
 agents:
   max_iterations: 20
-  enable_todos: false
 ```
 
 ## Development
 
 ```bash
 # Lint and format
-ruff check . && ruff format .
+uv run ruff check . && uv run ruff format .
 
 # Type check
-pyright
+uv run pyright
 
 # Test
-pytest
+uv run pytest
 
 # Run CI checks locally
 make ci
