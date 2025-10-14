@@ -28,7 +28,6 @@ def get_tool_definitions() -> list[dict[str, Any]]:
     return [
         {
             "type": "web_search",
-            "description": "Search the web for current information, recent updates, documentation, and topics beyond your knowledge cutoff. Use this to find up-to-date answers, verify facts, or gather additional context.",
             "search_context_size": "high",
         },
         {
