@@ -1,6 +1,6 @@
 """Exception types for Hello Agent API."""
 
-from responses_agent.exceptions import HelloAgentError
+from agent_kit.exceptions import HelloAgentError
 
 
 class SessionNotFoundError(HelloAgentError):

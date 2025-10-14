@@ -2,10 +2,10 @@
 
 import logging
 
-from responses_agent.agents.base_agent import BaseAgent
-from responses_agent.clients.openai_client import OpenAIClient
-from responses_agent.config.config import get_config
-from responses_agent.utils.tools import execute_tool, get_tool_definitions
+from agent_kit.agents.base_agent import BaseAgent
+from agent_kit.clients.openai_client import OpenAIClient
+from agent_kit.config.config import get_config
+from agent_kit.utils.tools import execute_tool, get_tool_definitions
 
 logger = logging.getLogger(__name__)
 

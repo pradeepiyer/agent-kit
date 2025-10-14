@@ -29,7 +29,7 @@ class PromptLoader:
         if self.use_package_resources:
             try:
                 relative_path = file_path.relative_to(Path("hello_agent/data/prompts"))
-                resource_file = files("responses_agent.data.prompts")
+                resource_file = files("agent_kit.data.prompts")
                 for part in relative_path.parts:
                     resource_file = resource_file / part
                 with resource_file.open("r", encoding="utf-8") as f:
@@ -44,7 +44,7 @@ class PromptLoader:
         if self.use_package_resources:
             try:
                 relative_path = file_path.relative_to(Path("hello_agent/data/prompts"))
-                resource_file = files("responses_agent.data.prompts")
+                resource_file = files("agent_kit.data.prompts")
                 for part in relative_path.parts:
                     resource_file = resource_file / part
                 with resource_file.open("r"):

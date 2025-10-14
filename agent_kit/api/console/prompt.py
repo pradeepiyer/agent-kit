@@ -9,7 +9,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from responses_agent.api.console.server import SlashCommands
+from agent_kit.api.console.server import SlashCommands
 
 
 class Prompt:

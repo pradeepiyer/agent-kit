@@ -9,7 +9,7 @@ from typing import Any
 
 import aiofiles
 
-from responses_agent.config.models import DebugPromptConfig
+from agent_kit.config.models import DebugPromptConfig
 
 logger = logging.getLogger(__name__)
 

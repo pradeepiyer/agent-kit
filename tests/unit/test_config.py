@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 import yaml
 
-from responses_agent.config.loader import ConfigLoader
+from agent_kit.config.loader import ConfigLoader
 
 
 def test_load_yaml_config(temp_config_dir: Path, sample_config_dict: dict[str, Any]) -> None:

@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from ..exceptions import ClientError
 from ..utils.prompt_debug import save_prompt_debug
 from .base import ConnectionPool, OpenAIConnectionFactory
-from responses_agent.config.config import get_config
+from agent_kit.config.config import get_config
 
 logger = logging.getLogger(__name__)
 

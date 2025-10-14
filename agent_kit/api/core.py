@@ -6,11 +6,11 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from responses_agent.agents.hello.agent import HelloAgent
-from responses_agent.api.exceptions import SessionNotFoundError
-from responses_agent.api.models import AgentType
-from responses_agent.clients.openai_client import OpenAIClient
-from responses_agent.config.config import get_openai_client
+from agent_kit.agents.hello.agent import HelloAgent
+from agent_kit.api.exceptions import SessionNotFoundError
+from agent_kit.api.models import AgentType
+from agent_kit.clients.openai_client import OpenAIClient
+from agent_kit.config.config import get_openai_client
 
 logger = logging.getLogger(__name__)
 

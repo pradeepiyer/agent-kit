@@ -1,7 +1,7 @@
 [project]
-name = "responses-agent-framework"
+name = "agent-kit"
 version = "0.1.0"
-description = "Agent framework built on OpenAI Responses API"
+description = "Developer toolkit for building AI agents with OpenAI Responses API"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-responses-agent = "responses_agent.main:main"
+agent-kit = "agent_kit.main:main"
 
 [tool.uv]
 package = true
@@ -25,10 +25,10 @@ package = true
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["responses_agent*"]
+include = ["agent_kit*"]
 
 [tool.setuptools.package-data]
-responses_agent = [
+agent_kit = [
     "data/config/*.yaml",
     "data/prompts/**/*.yaml",
 ]
@@ -66,10 +66,10 @@ testpaths = ["tests/"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=responses_agent --cov-report=term-missing --cov-report=html"
+addopts = "--cov=agent_kit --cov-report=term-missing --cov-report=html"
 
 [tool.coverage.run]
-source = ["responses_agent"]
+source = ["agent_kit"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

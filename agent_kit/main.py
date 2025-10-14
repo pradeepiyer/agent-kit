@@ -34,7 +34,7 @@ def init(force: bool = typer.Option(False, "--force", "-f", help="Overwrite exis
     get_console().print("[bold green]Responses Agent Configuration Setup[/bold green]\n")
 
     # Read the config template from package data
-    config_resource = files("responses_agent.data.config") / "config.yaml"
+    config_resource = files("agent_kit.data.config") / "config.yaml"
     config_content = config_resource.read_text()
 
     # Write configuration

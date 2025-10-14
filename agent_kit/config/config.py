@@ -17,7 +17,7 @@ from .models import ResponsesAgentConfig
 # during test discovery (clients import config, and config.__init__ imports this module).
 # Use TYPE_CHECKING for type hints only.
 if TYPE_CHECKING:  # pragma: no cover - types only
-    from responses_agent.clients.openai_client import OpenAIClient
+    from agent_kit.clients.openai_client import OpenAIClient
 
 # Global configuration instance
 _config: ResponsesAgentConfig | None = None
@@ -112,7 +112,7 @@ async def initialize_all_clients() -> None:
 
     # OpenAI is always required
     logging.info("Initializing OpenAI client...")
-    from responses_agent.clients.openai_client import OpenAIClient
+    from agent_kit.clients.openai_client import OpenAIClient
 
     _openai_client = OpenAIClient()
     await _openai_client.initialize()

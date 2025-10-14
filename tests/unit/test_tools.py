@@ -2,7 +2,7 @@
 
 import pytest
 
-from responses_agent.utils.tools import execute_tool, get_current_time, get_tool_definitions
+from agent_kit.utils.tools import execute_tool, get_current_time, get_tool_definitions
 
 
 @pytest.mark.asyncio

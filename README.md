@@ -1,6 +1,6 @@
-# Responses Agent Framework
+# Agent Kit
 
-Agent framework built on OpenAI Responses API for building production-ready AI agents.
+Developer toolkit for building production-ready AI agents with OpenAI Responses API.
 
 ## Features
 - **OpenAI Response API**: Support OpenAI Responses API with conversation continuation
@@ -21,13 +21,13 @@ Agent framework built on OpenAI Responses API for building production-ready AI a
 uv sync
 
 # Initialize configuration
-responses-agent init
+agent-kit init
 
 # Set your OpenAI API key
 export OPENAI_API_KEY="sk-..."
 
 # Run the interactive console
-responses-agent
+agent-kit
 
 # Try the hello agent
 /hello Alice
@@ -40,7 +40,7 @@ responses-agent
 You can also use the AgentAPI directly in your Python code:
 
 ```python
-from responses_agent.api import AgentAPI
+from agent_kit.api import AgentAPI
 
 # Initialize API
 api = AgentAPI()
@@ -80,11 +80,11 @@ The Hello Agent demonstrates:
 - Progress updates and reasoning summaries
 - Session management with context preservation
 
-See `responses_agent/agents/hello/` for implementation.
+See `agent_kit/agents/hello/` for implementation.
 
 ## Configuration
 
-Configuration is loaded from `~/.responses-agent/config.yaml`:
+Configuration is loaded from `~/.agent-kit/config.yaml`:
 
 ```yaml
 # OpenAI Configuration
@@ -109,7 +109,7 @@ agents:
 
 ## Building Your Own Agent
 
-1. **Create agent directory**: `responses_agent/agents/myagent/`
+1. **Create agent directory**: `agent_kit/agents/myagent/`
 
 2. **Define models** (`models.py`):
 ```python
@@ -128,9 +128,9 @@ class MyResponse(BaseModel):
 
 3. **Implement agent** (`agent.py`):
 ```python
-from responses_agent.agents.base_agent import BaseAgent
-from responses_agent.clients.openai_client import OpenAIClient
-from responses_agent.utils.tools import get_tool_definitions, execute_tool
+from agent_kit.agents.base_agent import BaseAgent
+from agent_kit.clients.openai_client import OpenAIClient
+from agent_kit.utils.tools import get_tool_definitions, execute_tool
 
 class MyAgent(BaseAgent):
     def __init__(self, openai_client: OpenAIClient):
@@ -212,8 +212,8 @@ pytest
 ## Project Structure
 
 ```
-responses-agent-framework/
-├── responses_agent/
+agent-kit-framework/
+├── agent_kit/
 │   ├── agents/          # Agent implementations
 │   │   ├── base_agent.py
 │   │   └── hello/       # Example hello agent

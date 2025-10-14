@@ -1,7 +1,7 @@
-# Hello Agent - Claude Instructions
+# Agent Kit - Claude Instructions
 
 ## Overview
-Common agent framework for building AI agents with OpenAI. Demonstrates core patterns: Responses API with conversation continuation, session management, tool integration, and structured outputs.
+Developer toolkit for building AI agents with OpenAI Responses API. Demonstrates core patterns: conversation continuation with `previous_response_id`, session management, tool integration, and structured outputs.
 
 ## Tech Stack
 - Python 3.13+, uv package manager

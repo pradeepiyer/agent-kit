@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from responses_agent.prompts.loader import PromptLoader
+from agent_kit.prompts.loader import PromptLoader
 
 
 def test_load_prompt_from_file(temp_prompts_dir: Path, sample_prompt_yaml: str) -> None:

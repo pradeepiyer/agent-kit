@@ -10,13 +10,13 @@ from abc import ABC
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from responses_agent.prompts.loader import PromptLoader
-from responses_agent.prompts.models import PromptConfig
+from agent_kit.prompts.loader import PromptLoader
+from agent_kit.prompts.models import PromptConfig
 
 from ..clients.openai_client import OpenAIClient
 from ..config.config import get_config
 from ..exceptions import HelloAgentError
-from responses_agent.api.progress import emit_progress
+from agent_kit.api.progress import emit_progress
 
 
 class BaseAgent(ABC):

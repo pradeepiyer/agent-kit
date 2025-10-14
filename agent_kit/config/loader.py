@@ -63,7 +63,7 @@ class ConfigLoader:
     def load_default_config(cls) -> dict[str, Any]:
         """Load default configuration from package resources."""
         try:
-            config_file = files("responses_agent.data.config") / "config.yaml"
+            config_file = files("agent_kit.data.config") / "config.yaml"
             with config_file.open("r", encoding="utf-8") as f:
                 data: dict[str, Any] = yaml.safe_load(f.read()) or {}
             return cls._substitute_env_vars_in_dict(data)

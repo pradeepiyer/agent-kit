@@ -7,7 +7,7 @@ from typing import ClassVar
 from rich.console import Console
 from rich.table import Table
 
-from responses_agent.api import AgentAPI
+from agent_kit.api import AgentAPI
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class ConsoleProgressHandler:
 
     async def emit(self, message: str, stage: str = "") -> None:
         """Emit simple progress message to console."""
-        from responses_agent.api.console import get_console
+        from agent_kit.api.console import get_console
 
         console = get_console()
         if stage == "reasoning":
@@ -177,9 +177,9 @@ async def run_console() -> None:
     """Run interactive console interface."""
     import asyncio
 
-    from responses_agent.api.progress import set_progress_handler
-    from responses_agent.config import setup_configuration
-    from responses_agent.config.config import close_all_clients
+    from agent_kit.api.progress import set_progress_handler
+    from agent_kit.config import setup_configuration
+    from agent_kit.config.config import close_all_clients
 
     from . import get_console
     from .prompt import Prompt

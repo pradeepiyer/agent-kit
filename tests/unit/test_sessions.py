@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from responses_agent.api.core import AgentSession, SessionStore
-from responses_agent.api.models import AgentType
+from agent_kit.api.core import AgentSession, SessionStore
+from agent_kit.api.models import AgentType
 
 
 @pytest.mark.asyncio
