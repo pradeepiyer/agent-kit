@@ -11,6 +11,10 @@ import yaml
 
 from .models import AgentKitConfig
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class ConfigLoader:
     """Configuration loader with support for YAML/JSON files with environment variable substitution."""
@@ -74,9 +78,77 @@ class ConfigLoader:
             return {}
 
     @classmethod
-    def load_config(
-        cls, config_file: Path | None = None, config_data: dict[str, Any] | None = None
-    ) -> AgentKitConfig:
+    def load_agent_configs(cls) -> dict[str, dict[str, Any]]:
+        """Discover and load all agent configs from package and user/custom directories.
+
+        Search order for each agent (later configs deep-merge into earlier):
+        1. Package: agent_kit/agents/{agent}/config.yaml
+        2. User: ~/.agent-kit/{agent}.yaml
+        3. Custom: ./agents/{agent}/config.yaml
+
+        Returns:
+            Dict mapping agent name to agent config dict
+        """
+        agent_configs: dict[str, dict[str, Any]] = {}
+
+        # 1. Load from package resources (agents/*/config.yaml)
+        try:
+            agents_package = files("agent_kit.agents")
+            # Iterate over agent directories in package
+            for agent_dir in agents_package.iterdir():
+                if agent_dir.is_dir() and not agent_dir.name.startswith("_"):
+                    agent_name = agent_dir.name
+                    try:
+                        config_file = agent_dir / "config.yaml"
+                        with config_file.open("r", encoding="utf-8") as f:
+                            config_data: dict[str, Any] = yaml.safe_load(f.read()) or {}
+                        agent_configs[agent_name] = cls._substitute_env_vars_in_dict(config_data)
+                        logger.debug(f"Loaded package config for agent '{agent_name}'")
+                    except FileNotFoundError:
+                        logger.debug(f"No config.yaml found for agent '{agent_name}' in package")
+                    except Exception as e:
+                        logger.warning(f"Failed to load package config for agent '{agent_name}': {e}")
+        except Exception as e:
+            logger.warning(f"Failed to scan package agents: {e}")
+
+        # 2. Merge from user directory (~/.agent-kit/{agent}.yaml)
+        user_config_dir = Path.home() / ".agent-kit"
+        if user_config_dir.exists():
+            for agent_config_file in user_config_dir.glob("*.yaml"):
+                # Skip the main config.yaml
+                if agent_config_file.name == "config.yaml":
+                    continue
+                agent_name = agent_config_file.stem  # e.g., "hello" from "hello.yaml"
+                try:
+                    user_config = cls.load_from_file(agent_config_file)
+                    if agent_name not in agent_configs:
+                        agent_configs[agent_name] = {}
+                    cls._deep_merge(agent_configs[agent_name], user_config)
+                    logger.debug(f"Merged user config for agent '{agent_name}' from {agent_config_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to load user config for agent '{agent_name}': {e}")
+
+        # 3. Merge from project custom agents (./agents/{agent}/config.yaml)
+        custom_agents_dir = Path.cwd() / "agents"
+        if custom_agents_dir.exists():
+            for agent_dir in custom_agents_dir.iterdir():
+                if agent_dir.is_dir() and not agent_dir.name.startswith("_"):
+                    agent_name = agent_dir.name
+                    agent_config_file = agent_dir / "config.yaml"
+                    if agent_config_file.exists():
+                        try:
+                            custom_config = cls.load_from_file(agent_config_file)
+                            if agent_name not in agent_configs:
+                                agent_configs[agent_name] = {}
+                            cls._deep_merge(agent_configs[agent_name], custom_config)
+                            logger.debug(f"Merged custom config for agent '{agent_name}' from {agent_config_file}")
+                        except Exception as e:
+                            logger.warning(f"Failed to load custom config for agent '{agent_name}': {e}")
+
+        return agent_configs
+
+    @classmethod
+    def load_config(cls, config_file: Path | None = None, config_data: dict[str, Any] | None = None) -> AgentKitConfig:
         """Load configuration from multiple sources with precedence."""
         final_config: dict[str, Any] = {}
 
@@ -100,10 +172,13 @@ class ConfigLoader:
         if config_data:
             cls._deep_merge(final_config, config_data)
 
-        # 4. Apply connection defaults to client configs
+        # 4. Load and merge agent configs
+        final_config["agent_configs"] = cls.load_agent_configs()
+
+        # 5. Apply connection defaults to client configs
         cls._apply_connection_defaults(final_config)
 
-        # 5. Validate and create the configuration object
+        # 6. Validate and create the configuration object
         return AgentKitConfig(**final_config)
 
     @classmethod

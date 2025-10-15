@@ -47,7 +47,7 @@ def sample_config_dict() -> dict[str, Any]:
             "backup_count": 2,
         },
         "agents": {"max_iterations": 10, "max_parallel_tools": 3},
-        "hello": {"max_iterations": 5},
+        "agent_configs": {"hello": {"max_iterations": 5}},
     }
 
 

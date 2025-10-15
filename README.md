@@ -1,81 +1,61 @@
 # Agent Kit
 
-Developer toolkit for building AI agents with OpenAI Responses API.
+Framework for building AI agents with OpenAI Responses API.
 
 ## Features
 
-- OpenAI Responses API with `previous_response_id` for conversation continuation
-- YAML-based configuration and prompt templates
-- Connection pooling with retry logic
+- Conversation continuation via `previous_response_id` (no message array juggling)
 - Session management with automatic cleanup
+- YAML-based prompts and configuration
+- Connection pooling with retry logic
 - Tool integration (web search, time utilities)
-- Interactive console with rich terminal interface
+- Interactive console with slash commands
 
 ## Quick Start
 
 ```bash
-# Install and setup
 uv sync
 uv run agent-kit init
 export OPENAI_API_KEY="sk-..."
-
-# Run console
 uv run agent-kit
-
-# Try commands
-/hello Alice
 ```
 
-## Programmatic Usage
+Try `/hello Alice` or ask questions in chat mode.
+
+## Usage
 
 ```python
-from agent_kit.api import AgentAPI
+from agent_kit import SessionStore
+from agent_kit.agents.hello.agent import HelloAgent
+from agent_kit.config import get_openai_client
 
-api = AgentAPI()
-session_id = await api.session_store.create_session()
+# Create session
+session_store = SessionStore(get_openai_client())
+session_id = await session_store.create_session()
+session = await session_store.get_session(session_id)
+
+# Use agent
+agent = await session.use_agent(HelloAgent)
 
 # Fresh conversation
-greeting = await api.hello("Alice", session_id)
+response = await agent.process("Greet Alice", continue_conversation=False)
 
-# Continued conversation (uses previous_response_id)
-response = await api.chat("What's the weather?", session_id)
-followup = await api.chat("How about tomorrow?", session_id)
+# Continue conversation (uses previous_response_id)
+followup = await agent.process("What's the weather?", continue_conversation=True)
 ```
 
-## Architecture
+## Extending
 
-```
-agent_kit/
-├── agents/          # BaseAgent and implementations
-├── api/             # AgentAPI, SessionStore, Console
-├── clients/         # OpenAI client with pooling
-├── config/          # YAML configuration system
-├── prompts/         # Prompt template loader
-├── utils/           # Tool definitions and utilities
-└── data/            # Config and prompt templates
-```
+Agent-Kit is designed for extension. See `agent_kit/agents/hello/` for the complete pattern.
 
-## Building Custom Agents
-
-### 1. Define Models
+### Custom Agent
 
 ```python
-from pydantic import BaseModel
-
-class MyResponse(BaseModel):
-    model_config = {"extra": "forbid"}  # Required for structured outputs
-    result: str
-```
-
-### 2. Implement Agent
-
-```python
-from agent_kit.agents.base_agent import BaseAgent
-from agent_kit.utils.tools import get_tool_definitions, execute_tool
+from agent_kit import BaseAgent
 
 class MyAgent(BaseAgent):
     async def process(self, query: str, continue_conversation: bool = False) -> str:
-        prompts = self.render_prompt("myagent", "orchestrator")
+        prompts = self.render_prompt("my_agent", "orchestrator")
 
         response = await self.execute_tool_conversation(
             instructions=prompts["instructions"],
@@ -83,85 +63,85 @@ class MyAgent(BaseAgent):
             tools=get_tool_definitions(),
             tool_executor=execute_tool,
             previous_response_id=self.last_response_id if continue_conversation else None,
-            response_format=MyResponse,  # structured output
-            max_iterations=10
         )
 
-        return response if isinstance(response, str) else response.result
+        return response.output_text or "Error"
 ```
 
-### 3. Create Prompt Template
+### Agent Structure
 
-`data/prompts/myagent/orchestrator.yaml`:
-
-```yaml
-agent: myagent
-function: orchestrator
-prompt:
-  instructions: |
-    # Role
-    You are a helpful assistant.
-
-    ## Available Tools
-    - `web_search`: Search the web
-    - `get_current_time`: Get current time
-parameters: []
+```
+my_agents/analyzer/
+├── agent.py          # Implements BaseAgent
+├── tools.py          # Tool definitions and executor
+├── console.py        # Optional: slash commands
+├── config.yaml       # Agent-specific config
+└── prompts/
+    └── orchestrator.yaml
 ```
 
-### 4. Add to API
+### Console Commands
 
 ```python
-async def my_action(self, query: str, session_id: str) -> str:
-    session = self._get_session(session_id)
-    agent = session.get_or_create_agent(AgentType.MY_AGENT)
-    result = await agent.process(query, continue_conversation=True)
-    session.store_result(AgentType.MY_AGENT, result, query=query)
-    return result
+from agent_kit.api.console.server import SlashCommands
+from rich.console import Console
+
+class MyCommands(SlashCommands):
+    def __init__(self, console: Console):
+        super().__init__(console)
+
+        # Register commands
+        self.register_command(
+            "/analyze",
+            self._handle_analyze,
+            "Run analysis",
+            "Analyze data\nUsage: /analyze <topic>"
+        )
+
+    async def _handle_analyze(self, args: list[str]) -> None:
+        # Your implementation
+        pass
+
+# Run console
+await run_console(MyCommands)
 ```
 
-## Configuration
+### Configuration
 
-`~/.agent-kit/config.yaml`:
-
+Framework config (`~/.agent-kit/config.yaml`):
 ```yaml
 openai:
   api_key: "${OPENAI_API_KEY}"
-  model: "gpt-5-nano"
+  model: "gpt-4o"
   pool_size: 8
 
 agents:
   max_iterations: 20
 ```
 
+Agent config (`~/.agent-kit/my_agent.yaml`):
+```yaml
+max_iterations: 15
+```
+
+Configs auto-loaded from:
+- `agent_kit/agents/{agent}/config.yaml` (package defaults)
+- `~/.agent-kit/{agent}.yaml` (user overrides)
+
 ## Development
 
 ```bash
-# Lint and format
-uv run ruff check . && uv run ruff format .
-
-# Type check
-uv run pyright
-
-# Test
-uv run pytest
-
-# Run CI checks locally
-make ci
+uv run ruff check . && uv run ruff format .  # Lint and format
+uv run pyright                                # Type check
+uv run pytest                                 # Test
+make ci                                       # Run all checks
 ```
-
-## Key Patterns
-
-- **Conversation Continuation**: Uses `previous_response_id` instead of message arrays
-- **Single Method Pattern**: One `process(query, continue_conversation)` method per agent
-- **Connection Pooling**: Efficient OpenAI API usage with retry logic
-- **YAML Prompts**: Markdown-formatted prompts with parameter injection
-- **Tool-First Design**: Centralized tool definitions in `utils/tools.py`
 
 ## Requirements
 
 - Python 3.13+
 - OpenAI API key
-- `uv` package manager
+- uv package manager
 
 ## License
 

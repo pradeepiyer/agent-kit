@@ -10,7 +10,7 @@ from agent_kit.prompts.loader import PromptLoader
 def test_load_prompt_from_file(temp_prompts_dir: Path, sample_prompt_yaml: str) -> None:
     """Prompt loads from YAML file correctly."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_file = agent_dir / "orchestrator.yaml"
@@ -28,7 +28,7 @@ def test_load_prompt_from_file(temp_prompts_dir: Path, sample_prompt_yaml: str) 
 def test_inject_parameters(temp_prompts_dir: Path) -> None:
     """Parameters inject into prompt templates correctly."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_content = """agent: hello
@@ -58,7 +58,7 @@ prompt:
 def test_inject_required_parameter_missing_raises_error(temp_prompts_dir: Path) -> None:
     """Missing required parameter raises ValueError."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_content = """agent: hello
@@ -83,7 +83,7 @@ prompt:
 def test_prompt_caching_works(temp_prompts_dir: Path, sample_prompt_yaml: str) -> None:
     """Same prompt loads from cache on second call."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_file = agent_dir / "orchestrator.yaml"
@@ -118,7 +118,7 @@ def test_load_nonexistent_prompt_raises_error(temp_prompts_dir: Path) -> None:
 def test_load_invalid_yaml_prompt_raises_error(temp_prompts_dir: Path) -> None:
     """Loading invalid YAML prompt raises ValueError."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_file = agent_dir / "bad.yaml"
@@ -133,7 +133,7 @@ def test_load_invalid_yaml_prompt_raises_error(temp_prompts_dir: Path) -> None:
 def test_load_and_inject_convenience_method(temp_prompts_dir: Path) -> None:
     """Convenience method loads and injects in one call."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_content = """agent: hello
@@ -157,7 +157,7 @@ prompt:
 def test_default_parameter_values_apply(temp_prompts_dir: Path) -> None:
     """Default parameter values apply when not provided."""
     temp_prompts_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir = temp_prompts_dir / "hello"
+    agent_dir = temp_prompts_dir / "hello" / "prompts"
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_content = """agent: hello

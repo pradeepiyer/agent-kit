@@ -32,6 +32,18 @@ class BaseAgent(ABC):
         self.prompt_cache_key: str | None = None
         self.agent_type = self.__class__.__name__.replace("Agent", "").lower()
 
+    def get_agent_config(self, key: str, default: Any = None) -> Any:
+        """Get agent-specific config value with fallback to default.
+
+        Args:
+            key: Config key to retrieve
+            default: Default value if key not found
+
+        Returns:
+            Config value or default
+        """
+        return get_config().agent_configs.get(self.agent_type, {}).get(key, default)
+
     def _process_response_metadata(
         self,
         response: Any,

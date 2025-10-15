@@ -1,15 +1,41 @@
 """Console server for interactive CLI interface."""
 
+import asyncio
 import logging
 import re
-from typing import ClassVar
+from collections.abc import Awaitable, Callable
 
 from rich.console import Console
 from rich.table import Table
 
-from agent_kit.api import AgentAPI
+from agent_kit.api.core import SessionStore
+
+from agent_kit.api.progress import set_progress_handler
+from agent_kit.config import setup_configuration
+from agent_kit.config.config import close_all_clients, get_openai_client
+
+from .prompt import Prompt
+
 
 logger = logging.getLogger(__name__)
+
+
+# Singleton console instance
+_console: Console | None = None
+
+
+def get_console() -> Console:
+    """Get the shared console instance."""
+    global _console
+    if _console is None:
+        _console = Console()
+    return _console
+
+
+def set_console(console: Console) -> None:
+    """Set the shared console instance (call once at application startup)."""
+    global _console
+    _console = console
 
 
 class ConsoleProgressHandler:
@@ -17,7 +43,6 @@ class ConsoleProgressHandler:
 
     async def emit(self, message: str, stage: str = "") -> None:
         """Emit simple progress message to console."""
-        from agent_kit.api.console import get_console
 
         console = get_console()
         if stage == "reasoning":
@@ -29,161 +54,148 @@ class ConsoleProgressHandler:
 class SlashCommands:
     """Handle slash commands for quick operations."""
 
-    COMMANDS: ClassVar[dict[str, str]] = {
-        "/hello": "Generate a personalized greeting",
-        "/clear": "Clear session context",
-        "/help": "Show available commands and usage",
-        "/exit": "Exit Hello Agent",
-    }
-
     def __init__(self, console: Console):
         """Initialize slash commands handler."""
         self.console = console
-        self.agent_api = AgentAPI()
+        self.session_store = SessionStore(get_openai_client())
         self.session_id: str | None = None
         self.exit_requested = False
 
+        # Command registry: {command: (handler, description, help_text)}
+        self._command_registry: dict[str, tuple[Callable[[list[str]], Awaitable[None]], str, str]] = {}
+
+        # Register framework commands
+        self._register_framework_commands()
+
     async def initialize(self) -> None:
         """Async initialization for session creation."""
-        self.session_id = await self.agent_api.session_store.create_session()
+        self.session_id = await self.session_store.create_session()
         logger.info(f"SlashCommands initialized with session_id: {self.session_id}")
-        session_count = await self.agent_api.session_store.get_session_count()
+        session_count = await self.session_store.get_session_count()
         logger.info(f"SessionStore has {session_count} sessions")
+
+    def register_command(
+        self,
+        command: str,
+        handler: Callable[[list[str]], Awaitable[None]],
+        description: str,
+        help_text: str,
+    ) -> None:
+        """Register a slash command with its handler and help text.
+
+        Args:
+            command: Command name (e.g., "/hello")
+            handler: Async function that handles the command, takes args: list[str]
+            description: Short description for command list
+            help_text: Detailed help text shown with /help <command>
+        """
+        self._command_registry[command] = (handler, description, help_text)
+
+    @property
+    def COMMANDS(self) -> dict[str, str]:
+        """Get all registered commands with descriptions (for tab completion)."""
+        return {cmd: desc for cmd, (_, desc, _) in self._command_registry.items()}
+
+    def _register_framework_commands(self) -> None:
+        """Register framework slash commands."""
+        self.register_command(
+            "/help",
+            self._handle_help,
+            "Show available commands and usage",
+            "Show available commands\nUsage: /help [command]",
+        )
+        self.register_command(
+            "/clear",
+            self._handle_clear,
+            "Clear session context",
+            "Clear all session context\nUsage: /clear",
+        )
+        self.register_command(
+            "/exit",
+            self._handle_exit,
+            "Exit console",
+            "Exit console\nUsage: /exit",
+        )
 
     def _sanitize_args(self, args: list[str]) -> list[str]:
         """Sanitize command arguments to prevent injection attacks."""
         return [re.sub(r'[;&|`$()\[\]{}"\']', "", arg)[:1000] for arg in args]
 
     async def handle_input(self, user_input: str) -> bool:
-        """Handle all agent inputs (slash commands and chat). Returns True if input was handled."""
-        # Handle slash commands
-        if user_input.startswith("/"):
-            parts = user_input.strip().split()
-            if not parts:
-                return False
+        """Handle slash commands via registry. Returns True if handled, False otherwise."""
+        # Only handle slash commands
+        if not user_input.startswith("/"):
+            return False
 
-            cmd = parts[0].lower()
-            args = self._sanitize_args(parts[1:] if len(parts) > 1 else [])
+        parts = user_input.strip().split()
+        if not parts:
+            return False
 
-            if cmd == "/help":
-                self.show_help(args)
-                return True
-            elif cmd == "/hello":
-                await self._handle_hello(args)
-                return True
-            elif cmd == "/clear":
-                await self._handle_clear()
-                return True
-            elif cmd == "/exit":
-                self._handle_exit()
-                return True
-            else:
-                self.console.print(f"[red]Unknown command: {cmd}[/red]")
-                self.console.print("Type [cyan]/help[/cyan] to see available commands")
-                return True
+        cmd = parts[0].lower()
+        args = self._sanitize_args(parts[1:] if len(parts) > 1 else [])
 
-        # Handle regular chat input
-        await self._handle_chat(user_input)
-        return True
+        # Route via command registry
+        if cmd in self._command_registry:
+            handler, _, _ = self._command_registry[cmd]
+            await handler(args)
+            return True
 
-    def show_help(self, args: list[str]) -> None:
-        """Show help for available commands."""
+        # Unknown slash command - let subclass handle it
+        return False
+
+    def _print_help(self, args: list[str]) -> None:
+        """Print help for available commands."""
         if args:
             cmd = args[0] if args[0].startswith("/") else "/" + args[0]
-            if cmd in self.COMMANDS:
-                self._show_command_help(cmd)
+            if cmd in self._command_registry:
+                _, _, help_text = self._command_registry[cmd]
+                self.console.print(f"\n[bold cyan]{cmd}[/bold cyan]\n{help_text}\n")
+            else:
+                self.console.print(f"[red]Unknown command: {cmd}[/red]")
         else:
             table = Table(title="Available Commands")
             table.add_column("Command", style="cyan", width=15)
             table.add_column("Description", style="dim")
 
-            for cmd, desc in self.COMMANDS.items():
+            for cmd, (_, desc, _) in self._command_registry.items():
                 table.add_row(cmd, desc)
 
             self.console.print(table)
             self.console.print("\n[dim]Chat Mode:[/dim]")
-            self.console.print("[dim]Type any message to chat with Hello Agent (supports follow-up questions)[/dim]")
-            self.console.print("[dim]Usage: /hello <name>[/dim]")
+            self.console.print("[dim]Type any message to start chatting[/dim]")
 
-    def _show_command_help(self, command: str) -> None:
-        """Show detailed help for a specific command."""
-        help_text = {
-            "/hello": "Generate a personalized greeting\nUsage: /hello <name>\nExample: /hello Alice",
-            "/help": "Show available commands\nUsage: /help [command]",
-            "/clear": "Clear all session context\nUsage: /clear",
-            "/exit": "Exit Hello Agent\nUsage: /exit",
-        }
+    async def _handle_help(self, args: list[str]) -> None:
+        """Handle /help command (async wrapper for registry)."""
+        self._print_help(args)
 
-        if command in help_text:
-            self.console.print(f"\n[bold cyan]{command}[/bold cyan]\n{help_text[command]}\n")
-        else:
-            self.console.print(f"[red]No detailed help available for {command}[/red]")
+    def show_help(self) -> None:
+        """Show help for all commands (public API for external callers)."""
+        self._print_help([])
 
-    async def _handle_clear(self) -> None:
+    async def _handle_clear(self, args: list[str]) -> None:
         """Clear all session context."""
         if not self.session_id:
             self.console.print("[red]Session not initialized[/red]")
             return
-        session = await self.agent_api.session_store.get_session(self.session_id)
+        session = await self.session_store.get_session(self.session_id)
         if session:
             await session.clear_results()
             self.console.print("[green]✓[/green] Cleared all session context")
         else:
             self.console.print("[red]Session not found[/red]")
 
-    def _handle_exit(self) -> None:
+    async def _handle_exit(self, args: list[str]) -> None:
         """Handle exit command."""
         self.exit_requested = True
         self.console.print("[yellow]Goodbye![/yellow]")
 
-    async def _handle_hello(self, args: list[str]) -> None:
-        """Handle /hello command using AgentAPI."""
-        if not args:
-            self.console.print("[dim]Usage: /hello <name>[/dim]")
-            return
 
-        if not self.session_id:
-            self.console.print("[red]Session not initialized[/red]")
-            return
+async def run_console(commands_class: type[SlashCommands] = SlashCommands) -> None:
+    """Run interactive console interface.
 
-        name = args[0]
-
-        self.console.print(f"[dim]▶ Generating greeting for {name}[/dim]")
-
-        try:
-            greeting = await self.agent_api.hello(name, self.session_id)
-            self.console.print("\n[bold green]Hello Agent:[/bold green]")
-            self.console.print(greeting, markup=False)
-            self.console.print()
-        except Exception as e:
-            self.console.print(f"[red]Error: {e}[/red]")
-
-    async def _handle_chat(self, query: str) -> None:
-        """Handle chat input using AgentAPI."""
-        if not self.session_id:
-            self.console.print("[red]Session not initialized[/red]")
-            return
-
-        try:
-            response = await self.agent_api.chat(query, self.session_id)
-            self.console.print("\n[bold green]Hello Agent:[/bold green]")
-            self.console.print(response, markup=False)
-            self.console.print()
-        except Exception as e:
-            self.console.print(f"[red]Error: {e}[/red]")
-
-
-async def run_console() -> None:
-    """Run interactive console interface."""
-    import asyncio
-
-    from agent_kit.api.progress import set_progress_handler
-    from agent_kit.config import setup_configuration
-    from agent_kit.config.config import close_all_clients
-
-    from . import get_console
-    from .prompt import Prompt
-
+    Args:
+        commands_class: SlashCommands subclass to use for handling commands and chat
+    """
     console = get_console()
 
     try:
@@ -196,13 +208,12 @@ async def run_console() -> None:
     # Set progress handler for console interface
     set_progress_handler(ConsoleProgressHandler())
 
-    # Initialize enhanced console components
-    prompt = Prompt(console)
-    slash_commands = SlashCommands(console)
+    slash_commands = commands_class(console)
     await slash_commands.initialize()
+    prompt = Prompt(console, commands=slash_commands.COMMANDS)
 
     # Show help at startup
-    slash_commands.show_help([])
+    slash_commands.show_help()
 
     while True:
         try:
@@ -212,8 +223,9 @@ async def run_console() -> None:
             if not user_input:
                 continue
 
-            # Handle slash commands and chat
+            # Handle input via commands (slash commands or chat, depending on implementation)
             await slash_commands.handle_input(user_input)
+
             if slash_commands.exit_requested:
                 await close_all_clients()
                 break

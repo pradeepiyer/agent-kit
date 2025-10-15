@@ -6,11 +6,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from agent_kit.agents.hello.agent import HelloAgent
-from agent_kit.api.exceptions import SessionNotFoundError
-from agent_kit.api.models import AgentType
+from agent_kit.agents.base_agent import BaseAgent
 from agent_kit.clients.openai_client import OpenAIClient
-from agent_kit.config.config import get_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -23,57 +20,60 @@ class AgentSession:
         self.openai_client = openai_client
         self.created_at = datetime.now()
         self.last_accessed = datetime.now()
-        self.agents: dict[AgentType, Any] = {}
-        self.last_active_agent: AgentType | None = None
-        self.agent_results: dict[AgentType, dict[str, Any]] = {}
+        self.agents: dict[str, BaseAgent] = {}
+        self.last_active_agent: str | None = None
+        self.agent_results: dict[str, dict[str, Any]] = {}
         self._lock = asyncio.Lock()
 
-    async def get_or_create_agent(self, agent_type: AgentType) -> Any:
-        """Get existing agent or create new one (lazy creation)."""
+    async def use_agent(self, agent_class: type[BaseAgent]) -> BaseAgent:
+        """Get or create agent instance.
+
+        Args:
+            agent_class: Agent class to instantiate
+
+        Returns:
+            Cached agent instance for this session
+        """
         async with self._lock:
             self.last_accessed = datetime.now()
+            agent_key = agent_class.__name__
 
-            if agent_type in self.agents:
-                logger.debug(f"Reusing existing {agent_type.value} agent for session {self.session_id}")
-                return self.agents[agent_type]
+            if agent_key in self.agents:
+                logger.debug(f"Reusing existing {agent_key} for session {self.session_id}")
+                return self.agents[agent_key]
 
-            logger.info(f"Creating new {agent_type.value} agent for session {self.session_id}")
-
-            if agent_type == AgentType.HELLO:
-                agent = HelloAgent(self.openai_client)
-            else:
-                raise ValueError(f"Unknown agent type: {agent_type}")
-
-            self.agents[agent_type] = agent
+            logger.info(f"Creating {agent_key} for session {self.session_id}")
+            agent = agent_class(self.openai_client)
+            self.agents[agent_key] = agent
             return agent
 
-    async def update_last_active(self, agent_type: AgentType) -> None:
+    async def update_last_active(self, agent_key: str) -> None:
         """Update the last active agent for this session."""
         async with self._lock:
-            self.last_active_agent = agent_type
+            self.last_active_agent = agent_key
             self.last_accessed = datetime.now()
-            logger.debug(f"Session {self.session_id} last active agent: {agent_type.value}")
+            logger.debug(f"Session {self.session_id} last active agent: {agent_key}")
 
-    async def store_result(self, agent_type: AgentType, result: Any, **metadata: Any) -> None:
+    async def store_result(self, agent_key: str, result: Any, **metadata: Any) -> None:
         """Store agent result for cross-agent context."""
         async with self._lock:
-            self.agent_results[agent_type] = {"result": result, "timestamp": datetime.now().isoformat(), **metadata}
-            logger.debug(f"Stored result for {agent_type.value} in session {self.session_id}")
+            self.agent_results[agent_key] = {"result": result, "timestamp": datetime.now().isoformat(), **metadata}
+            logger.debug(f"Stored result for {agent_key} in session {self.session_id}")
 
-    async def get_result(self, agent_type: AgentType) -> dict[str, Any] | None:
+    async def get_result(self, agent_key: str) -> dict[str, Any] | None:
         """Retrieve stored result from another agent."""
         async with self._lock:
-            return self.agent_results.get(agent_type)
+            return self.agent_results.get(agent_key)
 
-    async def clear_results(self, agent_type: AgentType | None = None) -> None:
-        """Clear stored results. If agent_type is None, clear all results."""
+    async def clear_results(self, agent_key: str | None = None) -> None:
+        """Clear stored results. If agent_key is None, clear all results."""
         async with self._lock:
-            if agent_type is None:
+            if agent_key is None:
                 self.agent_results.clear()
                 logger.debug(f"Cleared all results in session {self.session_id}")
             else:
-                self.agent_results.pop(agent_type, None)
-                logger.debug(f"Cleared {agent_type.value} result in session {self.session_id}")
+                self.agent_results.pop(agent_key, None)
+                logger.debug(f"Cleared {agent_key} result in session {self.session_id}")
 
     async def is_expired(self, ttl_seconds: int) -> bool:
         """Check if session has expired based on TTL."""
@@ -153,64 +153,3 @@ class SessionStore:
         """Get current number of active sessions."""
         async with self._lock:
             return len(self.sessions)
-
-
-class AgentAPI:
-    """Unified API for all Hello Agent functionality."""
-
-    def __init__(self, openai_client: OpenAIClient | None = None, session_ttl: int = 3600):
-        """Initialize AgentAPI with optional client injection."""
-        self.openai_client = openai_client or get_openai_client()
-        self.session_store = SessionStore(self.openai_client, default_ttl=session_ttl)
-        logger.info("AgentAPI initialized")
-
-    async def _get_session(self, session_id: str) -> AgentSession:
-        """Get session or raise error if not found."""
-        logger.debug(f"_get_session called with session_id: {session_id}")
-        session = await self.session_store.get_session(session_id)
-        if session is None:
-            logger.error(f"Session {session_id} not found or expired - raising SessionNotFoundError")
-            raise SessionNotFoundError(f"Session not found or expired: {session_id}")
-        logger.debug(f"Session {session_id} found successfully")
-        return session
-
-    async def hello(self, name: str, session_id: str) -> str:
-        """Execute hello agent hello.
-
-        Args:
-            name: Name to greet
-            session_id: Session identifier
-
-        Returns:
-            Personalized greeting message
-        """
-        session = await self._get_session(session_id)
-        agent = await session.get_or_create_agent(AgentType.HELLO)
-        await session.update_last_active(AgentType.HELLO)
-
-        logger.info(f"Executing hello for session {session_id}")
-        query = f"Greet {name}"
-        result = await agent.process(query, continue_conversation=False)
-
-        await session.store_result(AgentType.HELLO, result, name=name)
-        return result
-
-    async def chat(self, query: str, session_id: str) -> str:
-        """Execute hello agent chat with conversation continuation.
-
-        Args:
-            query: User query
-            session_id: Session identifier
-
-        Returns:
-            Chat response
-        """
-        session = await self._get_session(session_id)
-        agent = await session.get_or_create_agent(AgentType.HELLO)
-        await session.update_last_active(AgentType.HELLO)
-
-        logger.info(f"Executing chat for session {session_id}")
-        result = await agent.process(query, continue_conversation=True)
-
-        await session.store_result(AgentType.HELLO, result, query=query)
-        return result

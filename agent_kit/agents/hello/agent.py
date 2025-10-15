@@ -5,7 +5,8 @@ import logging
 from agent_kit.agents.base_agent import BaseAgent
 from agent_kit.clients.openai_client import OpenAIClient
 from agent_kit.config.config import get_config
-from agent_kit.utils.tools import execute_tool, get_tool_definitions
+
+from .tools import execute_tool, get_tool_definitions
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +35,8 @@ class HelloAgent(BaseAgent):
         # Render orchestrator prompt
         prompts = self.render_prompt("hello", "orchestrator")
 
-        # Get max iterations from config
-        max_iterations = get_config().hello.max_iterations
+        # Get max iterations from agent config (with fallback to global default)
+        max_iterations = self.get_agent_config("max_iterations", get_config().agents.max_iterations)
 
         # Execute the conversation with tools
         response = await self.execute_tool_conversation(

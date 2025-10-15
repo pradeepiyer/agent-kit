@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from agent_kit.agents.hello.agent import HelloAgent
 from agent_kit.api.core import AgentSession, SessionStore
-from agent_kit.api.models import AgentType
 
 
 @pytest.mark.asyncio
@@ -39,11 +39,11 @@ async def test_agent_creates_lazily_and_reuses(mock_openai_client: AsyncMock) ->
     session = AgentSession("test-session", mock_openai_client)
 
     # First call creates agent
-    agent1 = await session.get_or_create_agent(AgentType.HELLO)
+    agent1 = await session.use_agent(HelloAgent)
     assert agent1 is not None
 
     # Second call reuses same agent
-    agent2 = await session.get_or_create_agent(AgentType.HELLO)
+    agent2 = await session.use_agent(HelloAgent)
     assert agent1 is agent2
 
 
@@ -78,9 +78,9 @@ async def test_store_and_retrieve_result(mock_openai_client: AsyncMock) -> None:
     """Result stores and retrieves correctly."""
     session = AgentSession("test-session", mock_openai_client)
 
-    await session.store_result(AgentType.HELLO, "test result", extra="metadata")
+    await session.store_result("HelloAgent", "test result", extra="metadata")
 
-    result = await session.get_result(AgentType.HELLO)
+    result = await session.get_result("HelloAgent")
 
     assert result is not None
     assert result["result"] == "test result"
@@ -93,10 +93,10 @@ async def test_clear_specific_result(mock_openai_client: AsyncMock) -> None:
     """Clearing specific result works correctly."""
     session = AgentSession("test-session", mock_openai_client)
 
-    await session.store_result(AgentType.HELLO, "result1")
-    await session.clear_results(AgentType.HELLO)
+    await session.store_result("HelloAgent", "result1")
+    await session.clear_results("HelloAgent")
 
-    result = await session.get_result(AgentType.HELLO)
+    result = await session.get_result("HelloAgent")
 
     assert result is None
 
@@ -106,10 +106,10 @@ async def test_clear_all_results(mock_openai_client: AsyncMock) -> None:
     """Clearing all results works correctly."""
     session = AgentSession("test-session", mock_openai_client)
 
-    await session.store_result(AgentType.HELLO, "result1")
+    await session.store_result("HelloAgent", "result1")
     await session.clear_results()
 
-    result = await session.get_result(AgentType.HELLO)
+    result = await session.get_result("HelloAgent")
 
     assert result is None
 
@@ -179,9 +179,7 @@ async def test_concurrent_agent_creation(mock_openai_client: AsyncMock) -> None:
 
     # Try to create same agent concurrently
     agents = await asyncio.gather(
-        session.get_or_create_agent(AgentType.HELLO),
-        session.get_or_create_agent(AgentType.HELLO),
-        session.get_or_create_agent(AgentType.HELLO),
+        session.use_agent(HelloAgent), session.use_agent(HelloAgent), session.use_agent(HelloAgent)
     )
 
     # All should be the same agent instance
@@ -194,6 +192,6 @@ async def test_update_last_active_agent(mock_openai_client: AsyncMock) -> None:
     """Last active agent updates correctly."""
     session = AgentSession("test-session", mock_openai_client)
 
-    await session.update_last_active(AgentType.HELLO)
+    await session.update_last_active("HelloAgent")
 
-    assert session.last_active_agent == AgentType.HELLO
+    assert session.last_active_agent == "HelloAgent"

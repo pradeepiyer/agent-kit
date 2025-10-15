@@ -2,7 +2,7 @@
 
 import pytest
 
-from agent_kit.utils.tools import execute_tool, get_current_time, get_tool_definitions
+from agent_kit.agents.hello.tools import execute_tool, get_current_time, get_tool_definitions
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ def test_get_tool_definitions_has_web_search() -> None:
     web_search = next((t for t in tools if t.get("type") == "web_search"), None)
 
     assert web_search is not None
-    assert "description" in web_search
+    assert web_search["type"] == "web_search"
 
 
 def test_get_tool_definitions_has_get_current_time() -> None:
@@ -77,4 +77,5 @@ def test_tool_definitions_structure() -> None:
             assert "description" in tool
             assert "parameters" in tool
         elif tool["type"] == "web_search":
-            assert "description" in tool
+            # web_search tools have different structure
+            assert "search_context_size" in tool

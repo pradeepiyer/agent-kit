@@ -1,0 +1,2 @@
+# Hello Agent Configuration
+max_iterations: 10  # Override global default for web search capability

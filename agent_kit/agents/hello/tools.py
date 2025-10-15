@@ -26,10 +26,7 @@ def get_tool_definitions() -> list[dict[str, Any]]:
         List of tool definitions in OpenAI format.
     """
     return [
-        {
-            "type": "web_search",
-            "search_context_size": "high",
-        },
+        {"type": "web_search", "search_context_size": "high"},
         {
             "type": "function",
             "name": "get_current_time",

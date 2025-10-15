@@ -105,14 +105,6 @@ class AgentsConfig(BaseModel):
     max_parallel_tools: int = Field(default=5, ge=1, le=10, description="Maximum parallel tool executions")
 
 
-class HelloConfig(BaseModel):
-    """Hello agent configuration."""
-
-    max_iterations: int = Field(
-        default=3, ge=1, le=20, description="Maximum tool-calling iterations (overrides global default)"
-    )
-
-
 class AgentKitConfig(BaseModel):
     """Main configuration for agent-kit application."""
 
@@ -120,16 +112,21 @@ class AgentKitConfig(BaseModel):
     agents: AgentsConfig = Field(..., description="Global agent configuration defaults")
     openai: OpenAIConfig
     logging: LoggingConfig
-    hello: HelloConfig
+    agent_configs: dict[str, dict[str, Any]] = Field(
+        default_factory=dict, description="Per-agent configuration loaded from agent directories"
+    )
 
     @model_validator(mode="before")
     @classmethod
     def inherit_agent_defaults(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Inherit max_iterations from global agents config if not set explicitly."""
-        if global_max := values.get("agents", {}).get("max_iterations", 3):
-            for section in ["hello"]:
-                if section in values and "max_iterations" not in values[section]:
-                    values[section]["max_iterations"] = global_max
+        """Inherit max_iterations from global agents config if not set explicitly in agent configs."""
+        global_max = values.get("agents", {}).get("max_iterations", 3)
+
+        # Apply to all agent configs
+        for _, agent_config in values.get("agent_configs", {}).items():
+            if isinstance(agent_config, dict) and "max_iterations" not in agent_config:
+                agent_config["max_iterations"] = global_max
+
         return values
 
     @classmethod

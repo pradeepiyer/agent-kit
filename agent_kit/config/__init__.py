@@ -9,22 +9,13 @@ from .config import (
     setup_configuration,
 )
 from .loader import ConfigLoader
-from .models import (
-    AgentsConfig,
-    AgentKitConfig,
-    ConnectionConfig,
-    HelloConfig,
-    LoggingConfig,
-    LogLevel,
-    OpenAIConfig,
-)
+from .models import AgentsConfig, AgentKitConfig, ConnectionConfig, LoggingConfig, LogLevel, OpenAIConfig
 
 __all__ = [
-    "AgentsConfig",
     "AgentKitConfig",
+    "AgentsConfig",
     "ConfigLoader",
     "ConnectionConfig",
-    "HelloConfig",
     "LogLevel",
     "LoggingConfig",
     "OpenAIConfig",

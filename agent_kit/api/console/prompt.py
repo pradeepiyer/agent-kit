@@ -5,21 +5,22 @@ import readline
 import select
 import sys
 import termios
-from pathlib import Path
 
 from rich.console import Console
-
-from agent_kit.api.console.server import SlashCommands
 
 
 class Prompt:
     """Interactive prompt with readline-based completion."""
 
-    def __init__(self, console: Console | None = None):
-        """Initialize the enhanced prompt."""
+    def __init__(self, console: Console | None = None, commands: dict[str, str] | None = None):
+        """Initialize the enhanced prompt.
+
+        Args:
+            console: Rich console instance for output
+            commands: Command dictionary for tab completion (defaults to empty)
+        """
         self.console = console or Console()
-        self.slash_commands = list(SlashCommands.COMMANDS.keys())
-        self.file_extensions = [".py"]
+        self.slash_commands = list(commands.keys()) if commands else []
         self._setup_readline()
 
     def _setup_readline(self) -> None:
@@ -50,13 +51,11 @@ class Prompt:
             pass
 
     def _readline_completer(self, text: str, state: int) -> str | None:
-        """Readline completer function."""
+        """Readline completer function for slash commands."""
         completions: list[str] = []
 
         if text.startswith("/"):
             completions = [cmd + " " for cmd in self.slash_commands if cmd.startswith(text)]
-        elif text.startswith("@"):
-            completions = ["@" + comp for comp in self._get_file_completions(text[1:])]
 
         return completions[state] if state < len(completions) else None
 
@@ -119,42 +118,3 @@ class Prompt:
 
         lines.append(current_input)
         return "".join(lines)
-
-    def _get_completions(self, text: str) -> list[str]:
-        """Get completion options for the given text."""
-        completions: list[str] = []
-
-        if text.startswith("/"):
-            completions = [cmd for cmd in self.slash_commands if cmd.startswith(text)]
-        elif text.startswith("@"):
-            completions = ["@" + comp for comp in self._get_file_completions(text[1:])]
-
-        return completions
-
-    def _get_file_completions(self, text: str) -> list[str]:
-        """Get file completions for the given text."""
-        completions: list[str] = []
-
-        try:
-            text = os.path.expanduser(text) if text.startswith("~") else text
-
-            if text.endswith("/"):
-                base_path, pattern, prefix = Path(text), "*", text
-            elif "/" in text:
-                base_path, pattern, prefix = Path(text).parent, Path(text).name + "*", str(Path(text).parent) + "/"
-            else:
-                base_path, pattern, prefix = Path("."), (text + "*" if text else "*"), ""
-
-            if base_path.exists():
-                for path in base_path.glob(pattern):
-                    if path.name.startswith("."):
-                        continue
-                    if path.is_dir():
-                        completions.append(prefix + path.name + "/")
-                    elif any(str(path).endswith(ext) for ext in self.file_extensions):
-                        completions.append(prefix + path.name)
-
-        except Exception:
-            pass
-
-        return sorted([c for c in completions if c])
