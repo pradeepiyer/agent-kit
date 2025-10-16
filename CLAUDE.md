@@ -50,7 +50,6 @@ async def process(self, query: str, continue_conversation: bool = False) -> str:
 - Pydantic models with `model_config = {"extra": "forbid"}` for structured outputs
 - OpenAI Responses API over manual prompting
 - YAML prompts in markdown format with `# Headers` and `## Subheaders`
-- Single public method pattern: `process(query, continue_conversation)`
 - Minimal comments, brief and contextual
 - Run all Python commands under uv
 - Follow DRY principle aggressively
@@ -59,16 +58,13 @@ async def process(self, query: str, continue_conversation: bool = False) -> str:
 ## Testing
 ```bash
 # Run linter
-ruff check .
-
-# Run formatter
-ruff format .
+uv run ruff check --fix .
 
 # Run type checker
-pyright
+uv run pyright
 
 # Run tests
-pytest
+uv run pytest
 ```
 
 ## Type Checking
@@ -82,8 +78,6 @@ pytest
 - **Avoid code bloat**: Keep abstractions minimal and purposeful
 - **Responses API for conversations**: Use `previous_response_id` for context, not message arrays
 - **Structured outputs via Pydantic**: Enable reliable parsing with `extra="forbid"`
-- **Single method pattern**: One public `process()` method per agent
-- **Centralized tools**: Define all tools in `utils/tools.py`
 - **Markdown prompts**: Use `#` headers for structure, not verbose text blocks
 - **Brief docstrings**: Single line by default, expand only when necessary
 - **Session-based context**: Let AgentAPI manage sessions, agents focus on processing
