@@ -75,11 +75,7 @@ class SlashCommands:
         logger.info(f"SessionStore has {session_count} sessions")
 
     def register_command(
-        self,
-        command: str,
-        handler: Callable[[list[str]], Awaitable[None]],
-        description: str,
-        help_text: str,
+        self, command: str, handler: Callable[[list[str]], Awaitable[None]], description: str, help_text: str
     ) -> None:
         """Register a slash command with its handler and help text.
 
@@ -105,17 +101,9 @@ class SlashCommands:
             "Show available commands\nUsage: /help [command]",
         )
         self.register_command(
-            "/clear",
-            self._handle_clear,
-            "Clear session context",
-            "Clear all session context\nUsage: /clear",
+            "/clear", self._handle_clear, "Clear session context", "Clear all session context\nUsage: /clear"
         )
-        self.register_command(
-            "/exit",
-            self._handle_exit,
-            "Exit console",
-            "Exit console\nUsage: /exit",
-        )
+        self.register_command("/exit", self._handle_exit, "Exit console", "Exit console\nUsage: /exit")
 
     def _sanitize_args(self, args: list[str]) -> list[str]:
         """Sanitize command arguments to prevent injection attacks."""
