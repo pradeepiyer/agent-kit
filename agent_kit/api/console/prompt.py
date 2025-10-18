@@ -8,6 +8,8 @@ import termios
 
 from rich.console import Console
 
+from agent_kit.utils import get_user_dir
+
 
 class Prompt:
     """Interactive prompt with readline-based completion."""
@@ -35,7 +37,7 @@ class Prompt:
             readline.set_completer_delims(" \t\n")
 
             # Set up history file
-            histfile = os.path.join(os.path.expanduser("~/.agent-kit"), ".history")
+            histfile = str(get_user_dir() / ".history")
             os.makedirs(os.path.dirname(histfile), exist_ok=True)
             try:
                 readline.read_history_file(histfile)

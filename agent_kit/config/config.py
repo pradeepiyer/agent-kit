@@ -10,6 +10,8 @@ import logging.handlers
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from agent_kit.utils import get_user_dir
+
 from .loader import ConfigLoader
 from .models import AgentKitConfig
 
@@ -35,7 +37,7 @@ def load_config_from_file() -> AgentKitConfig:
 
     Checks for config in this order:
     1. AGENT_KIT_CONFIG environment variable (if set)
-    2. ~/.agent-kit/config.yaml (default location)
+    2. ~/.{app-name}/config.yaml (default location)
     3. Built-in defaults (if no file exists)
 
     Returns:
@@ -63,7 +65,7 @@ async def setup_configuration() -> AgentKitConfig:
             root_logger.handlers.clear()
 
             # Create rotating file handler
-            log_dir = Path.home() / ".agent-kit" / "logs"
+            log_dir = get_user_dir() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             file_handler = logging.handlers.RotatingFileHandler(
                 log_dir / "agent-kit.log",

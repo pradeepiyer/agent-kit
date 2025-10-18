@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from agent_kit.utils import get_user_dir
+
 
 class LogLevel(str, Enum):
     """Logging level enumeration."""
@@ -133,6 +135,6 @@ class AgentKitConfig(BaseModel):
     def get_default_config_paths(cls) -> list[Path]:
         """Get default configuration file paths to search."""
         return [
-            Path.home() / ".agent-kit" / "config.yaml",  # User config (highest priority)
+            get_user_dir() / "config.yaml",  # User config (highest priority)
             Path.cwd() / "config.yaml",  # Project root
         ]

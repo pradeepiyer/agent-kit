@@ -11,7 +11,7 @@ help:
 	@echo "  clean        - Remove build artifacts and cache files"
 	@echo "  lint         - Run linter and fix issues with ruff and mypy"
 	@echo "  sync-deps    - Sync uv dependencies and lock file"
-	@echo "  console      - Run interactive chat console (default mode)"
+	@echo "  console      - Run hello agent example (interactive chat)"
 	@echo "  help         - Show this help message"
 	@echo ""
 	@echo "Package Distribution:"
@@ -70,10 +70,10 @@ ci:
 sync-deps:
 	uv sync
 
-# Run interactive chat console
+# Run hello agent example
 console:
-	@echo "💬 Starting interactive chat console..."
-	uv run agent-kit
+	@echo "💬 Starting hello agent example..."
+	uv run python -m agent_kit.agents.hello
 
 # Count lines of code in the repository
 wc:
@@ -134,12 +134,15 @@ package-info:
 	@echo "📋 Package Information:"
 	@echo "  Name: agent-kit"
 	@echo "  Version: $$(grep '^version' pyproject.toml | cut -d'"' -f2)"
-	@echo "  Entry point: agent-kit -> agent_kit.main:main"
+	@echo "  Type: Pure library (no entry points)"
 	@echo ""
 	@echo "📁 Package structure:"
-	@echo "  agent_kit/           - Main package"
-	@echo "  agent_kit/data/      - Package data (config, prompts)"
-	@echo "  agent_kit/main.py    - CLI entry point"
+	@echo "  agent_kit/              - Main package"
+	@echo "  agent_kit/data/         - Package data (config, prompts)"
+	@echo "  agent_kit/agents/hello/ - Example agent implementation"
+	@echo ""
+	@echo "🚀 Run hello agent example:"
+	@echo "  uv run python -m agent_kit.agents.hello"
 	@echo ""
 	@if [ -d "dist" ]; then \
 		echo "📦 Built packages:"; \

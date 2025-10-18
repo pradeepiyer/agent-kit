@@ -1,6 +1,7 @@
 """Configuration loader with environment variable and file support."""
 
 import json
+import logging
 import os
 import re
 from importlib.resources import files
@@ -9,9 +10,9 @@ from typing import Any, cast
 
 import yaml
 
-from .models import AgentKitConfig
+from agent_kit.utils import get_user_dir
 
-import logging
+from .models import AgentKitConfig
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class ConfigLoader:
 
         Search order for each agent (later configs deep-merge into earlier):
         1. Package: agent_kit/agents/{agent}/config.yaml
-        2. User: ~/.agent-kit/{agent}.yaml
+        2. User: ~/.{app-name}/{agent}.yaml
         3. Custom: ./agents/{agent}/config.yaml
 
         Returns:
@@ -111,8 +112,8 @@ class ConfigLoader:
         except Exception as e:
             logger.warning(f"Failed to scan package agents: {e}")
 
-        # 2. Merge from user directory (~/.agent-kit/{agent}.yaml)
-        user_config_dir = Path.home() / ".agent-kit"
+        # 2. Merge from user directory (~/.{app-name}/{agent}.yaml)
+        user_config_dir = get_user_dir()
         if user_config_dir.exists():
             for agent_config_file in user_config_dir.glob("*.yaml"):
                 # Skip the main config.yaml

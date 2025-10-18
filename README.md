@@ -1,6 +1,6 @@
 # Agent Kit
 
-Framework for building AI agents with OpenAI Responses API.
+Pure Python library for building AI agents with OpenAI Responses API.
 
 ## Features
 
@@ -13,14 +13,23 @@ Framework for building AI agents with OpenAI Responses API.
 
 ## Quick Start
 
+Install agent-kit as a library:
 ```bash
-uv sync
-uv run agent-kit init
-export OPENAI_API_KEY="sk-..."
-uv run agent-kit
+uv add agent-kit
+# or: pip install agent-kit
 ```
 
-Try `/hello Alice` or ask questions in chat mode.
+Try the hello agent example:
+```bash
+git clone https://github.com/yourusername/agent-kit
+cd agent-kit
+uv sync
+export OPENAI_API_KEY="sk-..."
+uv run python -m agent_kit.agents.hello
+# or: make console
+```
+
+The hello agent demonstrates the framework patterns and uses `~/.hello-agent` for its configuration.
 
 ## Usage
 
@@ -106,9 +115,32 @@ class MyCommands(SlashCommands):
 await run_console(MyCommands)
 ```
 
+### Customizing User Directory
+
+By default, agent-kit auto-detects your application name and uses `~/.{app-name}` for configuration. You can customize this:
+
+```python
+# In your application's entry point (before any agent-kit imports)
+from agent_kit.utils import set_app_name
+
+set_app_name("my-awesome-agent")  # Uses ~/.my-awesome-agent
+```
+
+Example from hello agent (`agent_kit/agents/hello/__main__.py`):
+```python
+from agent_kit.utils import set_app_name
+set_app_name("hello-agent")  # Uses ~/.hello-agent instead of ~/.agent-kit
+```
+
+Auto-detection priority:
+1. Explicitly set via `set_app_name()`
+2. Environment variable `AGENT_KIT_APP_NAME`
+3. Auto-detect from `__main__` module name
+4. Fallback to `"agent-kit"`
+
 ### Configuration
 
-Framework config (`~/.agent-kit/config.yaml`):
+Framework config (`~/.{app-name}/config.yaml`):
 ```yaml
 openai:
   api_key: "${OPENAI_API_KEY}"
@@ -119,14 +151,14 @@ agents:
   max_iterations: 20
 ```
 
-Agent config (`~/.agent-kit/my_agent.yaml`):
+Agent config (`~/.{app-name}/my_agent.yaml`):
 ```yaml
 max_iterations: 15
 ```
 
 Configs auto-loaded from:
 - `agent_kit/agents/{agent}/config.yaml` (package defaults)
-- `~/.agent-kit/{agent}.yaml` (user overrides)
+- `~/.{app-name}/{agent}.yaml` (user overrides)
 
 ## Development
 
