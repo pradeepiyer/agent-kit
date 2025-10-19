@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "agent-kit"
 version = "0.1.0"
@@ -17,18 +21,6 @@ dependencies = [
 
 [tool.uv]
 package = true
-
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.packages.find]
-include = ["agent_kit*"]
-
-[tool.setuptools.package-data]
-agent_kit = [
-    "data/config/*.yaml",
-    "data/prompts/**/*.yaml",
-]
 
 [dependency-groups]
 dev = [
