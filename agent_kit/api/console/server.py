@@ -4,15 +4,17 @@ import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
+from importlib.resources import files
+from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
 
 from agent_kit.api.core import SessionStore
-
 from agent_kit.api.progress import set_progress_handler
 from agent_kit.config import setup_configuration
 from agent_kit.config.config import close_all_clients, get_openai_client
+from agent_kit.utils import get_user_dir
 
 from .prompt import Prompt
 
@@ -101,6 +103,12 @@ class SlashCommands:
             "Show available commands\nUsage: /help [command]",
         )
         self.register_command(
+            "/init",
+            self._handle_init,
+            "Initialize configuration files",
+            "Copy default configuration files to user directory\nUsage: /init",
+        )
+        self.register_command(
             "/clear", self._handle_clear, "Clear session context", "Clear all session context\nUsage: /clear"
         )
         self.register_command("/exit", self._handle_exit, "Exit console", "Exit console\nUsage: /exit")
@@ -159,6 +167,70 @@ class SlashCommands:
     def show_help(self) -> None:
         """Show help for all commands (public API for external callers)."""
         self._print_help([])
+
+    async def _handle_init(self, args: list[str]) -> None:
+        """Initialize configuration files by copying defaults to user directory."""
+        user_dir = get_user_dir()
+        user_dir.mkdir(parents=True, exist_ok=True)
+
+        created_files: list[Path] = []
+        skipped_files: list[Path] = []
+
+        # Copy base config
+        try:
+            base_config_source = files("agent_kit.data.config") / "config.yaml"
+            base_config_target = user_dir / "config.yaml"
+
+            if base_config_target.exists():
+                skipped_files.append(base_config_target)
+            else:
+                base_config_target.write_text(base_config_source.read_text(encoding="utf-8"), encoding="utf-8")
+                created_files.append(base_config_target)
+        except Exception as e:
+            self.console.print(f"[red]Failed to copy base config: {e}[/red]")
+            return
+
+        # Copy all agent configs
+        try:
+            agents_package = files("agent_kit.agents")
+            for agent_dir in agents_package.iterdir():
+                if agent_dir.is_dir() and not agent_dir.name.startswith("_"):
+                    agent_name = agent_dir.name
+                    try:
+                        agent_config_source = agent_dir / "config.yaml"
+                        agent_config_target = user_dir / f"{agent_name}.yaml"
+
+                        if agent_config_target.exists():
+                            skipped_files.append(agent_config_target)
+                        else:
+                            agent_config_target.write_text(
+                                agent_config_source.read_text(encoding="utf-8"), encoding="utf-8"
+                            )
+                            created_files.append(agent_config_target)
+                    except FileNotFoundError:
+                        # Agent doesn't have a config.yaml, skip silently
+                        pass
+                    except Exception as e:
+                        self.console.print(f"[yellow]Warning: Failed to copy config for agent '{agent_name}': {e}[/yellow]")
+        except Exception as e:
+            self.console.print(f"[yellow]Warning: Failed to scan agent configs: {e}[/yellow]")
+
+        # Display results
+        self.console.print()
+        if created_files:
+            for file_path in created_files:
+                self.console.print(f"[green]✓[/green] Created {file_path}")
+
+        if skipped_files:
+            self.console.print()
+            for file_path in skipped_files:
+                self.console.print(f"[yellow]⊘[/yellow] Skipped {file_path} (already exists)")
+
+        if created_files:
+            self.console.print("\n[dim]Next steps:[/dim]")
+            self.console.print(f"[dim]1. Customize agent settings in {user_dir}/*.yaml[/dim]")
+
+        self.console.print()
 
     async def _handle_clear(self, args: list[str]) -> None:
         """Clear all session context."""
