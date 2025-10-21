@@ -10,7 +10,7 @@ import logging.handlers
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from agent_kit.utils import get_user_dir
+from agent_kit.utils import get_app_name, get_user_dir
 
 from .loader import ConfigLoader
 from .models import AgentKitConfig
@@ -68,7 +68,7 @@ async def setup_configuration() -> AgentKitConfig:
             log_dir = get_user_dir() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             file_handler = logging.handlers.RotatingFileHandler(
-                log_dir / "agent-kit.log",
+                log_dir / f"{get_app_name()}.log",
                 maxBytes=_config.logging.max_file_size,
                 backupCount=_config.logging.backup_count,
             )
