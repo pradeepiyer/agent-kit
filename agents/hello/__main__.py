@@ -3,7 +3,7 @@
 
 """Standalone hello agent entry point.
 
-Run with: python -m agent_kit.agents.hello
+Run with: python -m agents.hello
 """
 
 import asyncio

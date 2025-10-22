@@ -2,7 +2,7 @@
 
 import pytest
 
-from agent_kit.agents.hello.tools import execute_tool, get_current_time, get_tool_definitions
+from agents.hello.tools import execute_tool, get_current_time, get_tool_definitions
 
 
 @pytest.mark.asyncio

@@ -25,7 +25,7 @@ git clone https://github.com/yourusername/agent-kit
 cd agent-kit
 uv sync
 export OPENAI_API_KEY="sk-..."
-uv run python -m agent_kit.agents.hello
+uv run python -m agents.hello
 # or: make console
 ```
 
@@ -35,7 +35,7 @@ The hello agent demonstrates the framework patterns and uses `~/.hello-agent` fo
 
 ```python
 from agent_kit import SessionStore
-from agent_kit.agents.hello.agent import HelloAgent
+from agents.hello.agent import HelloAgent
 from agent_kit.config import get_openai_client
 
 # Create session
@@ -55,7 +55,7 @@ followup = await agent.process("What's the weather?", continue_conversation=True
 
 ## Extending
 
-Agent-Kit is designed for extension. See `agent_kit/agents/hello/` for the complete pattern.
+Agent-Kit is designed for extension. See `agents/hello/` for the complete pattern.
 
 ### Custom Agent
 
@@ -126,7 +126,7 @@ from agent_kit.utils import set_app_name
 set_app_name("my-awesome-agent")  # Uses ~/.my-awesome-agent
 ```
 
-Example from hello agent (`agent_kit/agents/hello/__main__.py`):
+Example from hello agent (`agents/hello/__main__.py`):
 ```python
 from agent_kit.utils import set_app_name
 set_app_name("hello-agent")  # Uses ~/.hello-agent instead of ~/.agent-kit
@@ -157,7 +157,7 @@ max_iterations: 15
 ```
 
 Configs auto-loaded from:
-- `agent_kit/agents/{agent}/config.yaml` (package defaults)
+- `./agents/{agent}/config.yaml` (project defaults)
 - `~/.{app-name}/{agent}.yaml` (user overrides)
 
 ## Development

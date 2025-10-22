@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from agent_kit.agents.hello.agent import HelloAgent
+from agents.hello.agent import HelloAgent
 from agent_kit.api.core import AgentSession, SessionStore
 
 

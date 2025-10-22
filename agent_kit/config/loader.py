@@ -80,39 +80,18 @@ class ConfigLoader:
 
     @classmethod
     def load_agent_configs(cls) -> dict[str, dict[str, Any]]:
-        """Discover and load all agent configs from package and user/custom directories.
+        """Discover and load all agent configs from user and project directories.
 
         Search order for each agent (later configs deep-merge into earlier):
-        1. Package: agent_kit/agents/{agent}/config.yaml
-        2. User: ~/.{app-name}/{agent}.yaml
-        3. Custom: ./agents/{agent}/config.yaml
+        1. User: ~/.{app-name}/{agent}.yaml
+        2. Project: ./agents/{agent}/config.yaml
 
         Returns:
             Dict mapping agent name to agent config dict
         """
         agent_configs: dict[str, dict[str, Any]] = {}
 
-        # 1. Load from package resources (agents/*/config.yaml)
-        try:
-            agents_package = files("agent_kit.agents")
-            # Iterate over agent directories in package
-            for agent_dir in agents_package.iterdir():
-                if agent_dir.is_dir() and not agent_dir.name.startswith("_"):
-                    agent_name = agent_dir.name
-                    try:
-                        config_file = agent_dir / "config.yaml"
-                        with config_file.open("r", encoding="utf-8") as f:
-                            config_data: dict[str, Any] = yaml.safe_load(f.read()) or {}
-                        agent_configs[agent_name] = cls._substitute_env_vars_in_dict(config_data)
-                        logger.debug(f"Loaded package config for agent '{agent_name}'")
-                    except FileNotFoundError:
-                        logger.debug(f"No config.yaml found for agent '{agent_name}' in package")
-                    except Exception as e:
-                        logger.warning(f"Failed to load package config for agent '{agent_name}': {e}")
-        except Exception as e:
-            logger.warning(f"Failed to scan package agents: {e}")
-
-        # 2. Merge from user directory (~/.{app-name}/{agent}.yaml)
+        # 1. Merge from user directory (~/.{app-name}/{agent}.yaml)
         user_config_dir = get_user_dir()
         if user_config_dir.exists():
             for agent_config_file in user_config_dir.glob("*.yaml"):
@@ -129,7 +108,7 @@ class ConfigLoader:
                 except Exception as e:
                     logger.warning(f"Failed to load user config for agent '{agent_name}': {e}")
 
-        # 3. Merge from project custom agents (./agents/{agent}/config.yaml)
+        # 2. Merge from project agents (./agents/{agent}/config.yaml)
         custom_agents_dir = Path.cwd() / "agents"
         if custom_agents_dir.exists():
             for agent_dir in custom_agents_dir.iterdir():

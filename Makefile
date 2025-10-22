@@ -73,7 +73,7 @@ sync-deps:
 # Run hello agent example
 console:
 	@echo "💬 Starting hello agent example..."
-	uv run python -m agent_kit.agents.hello
+	uv run python -m agents.hello
 
 # Count lines of code in the repository
 wc:
@@ -139,10 +139,10 @@ package-info:
 	@echo "📁 Package structure:"
 	@echo "  agent_kit/              - Main package"
 	@echo "  agent_kit/data/         - Package data (config, prompts)"
-	@echo "  agent_kit/agents/hello/ - Example agent implementation"
+	@echo "  agents/hello/           - Example agent implementation"
 	@echo ""
 	@echo "🚀 Run hello agent example:"
-	@echo "  uv run python -m agent_kit.agents.hello"
+	@echo "  uv run python -m agents.hello"
 	@echo ""
 	@if [ -d "dist" ]; then \
 		echo "📦 Built packages:"; \

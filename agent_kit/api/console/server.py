@@ -190,30 +190,29 @@ class SlashCommands:
             self.console.print(f"[red]Failed to copy base config: {e}[/red]")
             return
 
-        # Copy all agent configs
-        try:
-            agents_package = files("agent_kit.agents")
-            for agent_dir in agents_package.iterdir():
+        # Copy all agent configs from ./agents/ directory
+        agents_dir = Path.cwd() / "agents"
+        if agents_dir.exists():
+            for agent_dir in agents_dir.iterdir():
                 if agent_dir.is_dir() and not agent_dir.name.startswith("_"):
                     agent_name = agent_dir.name
-                    try:
-                        agent_config_source = agent_dir / "config.yaml"
-                        agent_config_target = user_dir / f"{agent_name}.yaml"
+                    agent_config_source = agent_dir / "config.yaml"
 
-                        if agent_config_target.exists():
-                            skipped_files.append(agent_config_target)
-                        else:
-                            agent_config_target.write_text(
-                                agent_config_source.read_text(encoding="utf-8"), encoding="utf-8"
+                    if agent_config_source.exists():
+                        try:
+                            agent_config_target = user_dir / f"{agent_name}.yaml"
+
+                            if agent_config_target.exists():
+                                skipped_files.append(agent_config_target)
+                            else:
+                                agent_config_target.write_text(
+                                    agent_config_source.read_text(encoding="utf-8"), encoding="utf-8"
+                                )
+                                created_files.append(agent_config_target)
+                        except Exception as e:
+                            self.console.print(
+                                f"[yellow]Warning: Failed to copy config for agent '{agent_name}': {e}[/yellow]"
                             )
-                            created_files.append(agent_config_target)
-                    except FileNotFoundError:
-                        # Agent doesn't have a config.yaml, skip silently
-                        pass
-                    except Exception as e:
-                        self.console.print(f"[yellow]Warning: Failed to copy config for agent '{agent_name}': {e}[/yellow]")
-        except Exception as e:
-            self.console.print(f"[yellow]Warning: Failed to scan agent configs: {e}[/yellow]")
 
         # Display results
         self.console.print()
@@ -227,8 +226,7 @@ class SlashCommands:
                 self.console.print(f"[yellow]⊘[/yellow] Skipped {file_path} (already exists)")
 
         if created_files:
-            self.console.print("\n[dim]Next steps:[/dim]")
-            self.console.print(f"[dim]1. Customize agent settings in {user_dir}/*.yaml[/dim]")
+            self.console.print(f"\n[dim]Next steps: Customize agent settings in {user_dir}/*.yaml[/dim]")
 
         self.console.print()
 

@@ -4,7 +4,7 @@ from typing import cast
 
 from rich.console import Console
 
-from agent_kit.agents.hello.agent import HelloAgent
+from agents.hello.agent import HelloAgent
 from agent_kit.api.console.server import SlashCommands
 
 

@@ -24,10 +24,13 @@ class BaseAgent(ABC):
 
     def __init__(self, openai_client: OpenAIClient):
         """Initialize base agent with common setup."""
+        from pathlib import Path
+
         self.client = openai_client
         self.logger = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
         self.last_response_id: str | None = None
-        self.prompt_loader = PromptLoader()
+        # Initialize PromptLoader to search ./agents/ directory
+        self.prompt_loader = PromptLoader(search_paths=[Path.cwd() / "agents"])
         self.last_prompt_config: PromptConfig | None = None
         self.prompt_cache_key: str | None = None
         self.agent_type = self.__class__.__name__.replace("Agent", "").lower()
