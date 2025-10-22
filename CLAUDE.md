@@ -13,37 +13,90 @@ Developer toolkit for building AI agents with OpenAI Responses API. Demonstrates
 ## Architecture
 - **Base Agent**: Unified `execute_tool_conversation()` for all agents
 - **Responses API**: Native tool execution with `previous_response_id` for conversation continuation
-- **Session Management**: Thread-safe session store with automatic expiration
+- **Session Management**: Async session store with automatic expiration
+- **Progress Handling**: Protocol-based progress reporting (console, REST SSE, MCP)
 - **Prompt System**: YAML-based prompts in markdown format with parameter injection
-- **Tool System**: Centralized tool definitions in `utils/tools.py`
+- **Tool System**: Centralized tool definitions with async execution
 - **Connection Pooling**: Efficient OpenAI client with retry logic
+- **Multiple Interfaces**: Console, REST API with SSE, and MCP protocol
 
 ## Key Features
+- **Multiple Interfaces**: Console, REST API with SSE streaming, MCP for Claude Desktop
+- **Agent Registry**: Dynamic route and tool generation for HTTP protocols
 - **Chat Interface**: Interactive console with slash commands
 - **Hello Command** (`/hello`): Fresh greeting conversations
 - **Chat Mode**: Continuous conversation with context via Responses API
 - **Web Search**: Native OpenAI web search with citation support
-- **Progress Tracking**: Context-aware progress updates with reasoning summaries
+- **Progress Tracking**: Unified progress handler across all interfaces
 - **Tool Execution**: Async tool calling (web search, time utilities)
 
 ## Agent Patterns
 ```python
-# Standard Responses API pattern with single process() method
-async def process(self, query: str, continue_conversation: bool = False) -> str:
-    prompts = self.render_prompt("agent", "orchestrator")
+# BaseAgent requires progress_handler parameter
+class MyAgent(BaseAgent):
+    def __init__(self, openai_client: OpenAIClient, progress_handler: ProgressHandler):
+        super().__init__(openai_client, progress_handler)
 
-    result = await self.execute_tool_conversation(
-        instructions=prompts["instructions"],
-        initial_input=[{"role": "user", "content": query}],
-        tools=get_tool_definitions(),
-        tool_executor=execute_tool,
-        previous_response_id=self.last_response_id if continue_conversation else None,
-        response_format=None,  # Or Pydantic model for structured output
-        max_iterations=10
-    )
-    # response_id is stored internally as self.last_response_id
-    return result
+    async def process(self, query: str, continue_conversation: bool = False) -> str:
+        prompts = self.render_prompt("agent", "orchestrator")
+
+        result = await self.execute_tool_conversation(
+            instructions=prompts["instructions"],
+            initial_input=[{"role": "user", "content": query}],
+            tools=get_tool_definitions(),
+            tool_executor=execute_tool,
+            previous_response_id=self.last_response_id if continue_conversation else None,
+            response_format=None,  # Or Pydantic model for structured output
+            max_iterations=10
+        )
+        # response_id is stored internally as self.last_response_id
+        return result
 ```
+
+## HTTP Patterns
+
+### Agent Registry
+```python
+from agent_kit.api.http import AgentRegistry, create_server
+
+registry = AgentRegistry()
+registry.register(
+    name="my_agent",
+    agent_class=MyAgent,
+    description="Agent description for API docs and MCP tools",
+    request_model=MyRequest,  # Pydantic model
+    response_model=MyResponse,  # Pydantic model
+)
+
+app = create_server(registry, config.interfaces.http, config.interfaces.session_ttl)
+```
+
+### Interface Configuration
+```yaml
+interfaces:
+  session_ttl: 3600  # Shared across all interfaces
+
+  http:              # HTTP server
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+    cors_origins: ["http://localhost:*"]
+    rest_api: true   # Enable REST endpoints
+    mcp_http: true   # Enable MCP over HTTP
+    mcp_mount_path: "/mcp"
+
+  console:
+    enabled: true
+
+  mcp_stdio:
+    enabled: false   # MCP stdio for Claude Desktop
+```
+
+### Progress Handlers
+- **ConsoleProgressHandler**: Rich console output with formatting
+- **RESTProgressHandler**: SSE streaming via asyncio queue
+- **MCPProgressHandler**: Context.report_progress() for Claude Desktop
+- **NoOpProgressHandler**: Silent handler for testing
 
 ## Development Guidelines
 - Async/await patterns throughout

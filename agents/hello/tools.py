@@ -5,11 +5,7 @@ from typing import Any
 
 
 async def get_current_time() -> dict[str, str]:
-    """Get the current time.
-
-    Returns:
-        Dictionary with current time information.
-    """
+    """Get the current time."""
     now = datetime.now()
     return {
         "current_time": now.strftime("%I:%M:%S %p"),
@@ -20,11 +16,7 @@ async def get_current_time() -> dict[str, str]:
 
 
 def get_tool_definitions() -> list[dict[str, Any]]:
-    """Get tool definitions for OpenAI API.
-
-    Returns:
-        List of tool definitions in OpenAI format.
-    """
+    """Get tool definitions for OpenAI API."""
     return [
         {"type": "web_search", "search_context_size": "high"},
         {
@@ -37,18 +29,7 @@ def get_tool_definitions() -> list[dict[str, Any]]:
 
 
 async def execute_tool(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any]:
-    """Execute a tool by name.
-
-    Args:
-        tool_name: Name of the tool to execute
-        tool_args: Arguments for the tool
-
-    Returns:
-        Tool execution result
-
-    Raises:
-        ValueError: If tool name is unknown
-    """
+    """Execute a tool by name."""
     if tool_name == "get_current_time":
         return await get_current_time()
     raise ValueError(f"Unknown tool: {tool_name}")

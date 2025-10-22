@@ -140,3 +140,65 @@ def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def mock_hello_agent(mock_openai_client: AsyncMock) -> MagicMock:
+    """Mock HelloAgent for HTTP/MCP testing."""
+    from agents.hello.agent import HelloAgent
+
+    agent = MagicMock(spec=HelloAgent)
+    agent.process = AsyncMock(return_value="Hello! How can I help you today?")
+    return agent
+
+
+@pytest.fixture
+def test_registry() -> Any:
+    """Test agent registry with HelloAgent registered."""
+    from agents.hello.agent import HelloAgent
+    from agents.hello.models import HelloRequest, HelloResponse
+    from agent_kit.api.http.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register(
+        name="hello",
+        agent_class=HelloAgent,
+        description="Test hello agent for unit tests",
+        request_model=HelloRequest,
+        response_model=HelloResponse,
+    )
+    return registry
+
+
+@pytest.fixture
+def test_session_store(mock_openai_client: AsyncMock) -> Any:
+    """Test session store."""
+    from agent_kit.api.core import SessionStore
+
+    return SessionStore(mock_openai_client, default_ttl=3600)
+
+
+@pytest.fixture
+def test_app(test_registry: Any, test_session_store: Any) -> Any:
+    """Test FastAPI application."""
+    from agent_kit.api.http.rest import create_rest_routes
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+
+    # Create a minimal FastAPI app for testing
+    app = FastAPI(title="Test API")
+
+    # Add CORS
+    app.add_middleware(
+        CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
+    )
+
+    # Store session store in app state
+    app.state.session_store = test_session_store
+    app.state.registry = test_registry
+
+    # Create and include REST router
+    rest_router = create_rest_routes(test_registry, test_session_store)
+    app.include_router(rest_router)
+
+    return app

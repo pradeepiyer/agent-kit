@@ -1,38 +1,71 @@
-"""Progress handler system with contextvar-based routing."""
+# Progress handler protocol and concrete implementations for different interfaces
 
-import logging
-from contextvars import ContextVar
-from typing import Protocol
+import asyncio
+import json
+from datetime import datetime
+from typing import Any, Protocol
 
-logger = logging.getLogger(__name__)
+from rich.console import Console
 
 
 class ProgressHandler(Protocol):
-    """Progress event handler."""
+    """Protocol for progress reporting across different interfaces."""
 
     async def emit(self, message: str, stage: str = "") -> None:
-        """Simple progress message."""
+        """Emit a progress message."""
         ...
 
 
-_progress_context: ContextVar[ProgressHandler | None] = ContextVar("progress", default=None)
+class ConsoleProgressHandler:
+    """Progress handler for interactive console using Rich."""
+
+    def __init__(self, console: Console):
+        self.console = console
+
+    async def emit(self, message: str, stage: str = "") -> None:
+        """Emit progress to console."""
+        if stage == "reasoning":
+            self.console.print(f"[dim cyan]💭 {message}[/dim cyan]")
+        else:
+            self.console.print(f"[dim]⏳ {message}[/dim]")
 
 
-def set_progress_handler(handler: ProgressHandler) -> None:
-    """Set progress handler for current context."""
-    _progress_context.set(handler)
+class RESTProgressHandler:
+    """Progress handler for REST API with SSE streaming via asyncio queue."""
+
+    def __init__(self, queue: asyncio.Queue[dict[str, Any]]):
+        """Initialize with asyncio queue for event streaming."""
+        self.queue = queue
+
+    async def emit(self, message: str, stage: str = "") -> None:
+        """Emit progress event to queue."""
+        await self.queue.put(
+            {
+                "type": "reasoning" if stage == "reasoning" else "progress",
+                "message": message,
+                "stage": stage,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
-def get_progress_handler() -> ProgressHandler:
-    """Get current progress handler, raises if not set."""
-    handler = _progress_context.get()
-    if handler is None:
-        raise RuntimeError("Progress handler not set. Each interface must call set_progress_handler().")
-    return handler
+class MCPProgressHandler:
+    """Progress handler for MCP protocol using Context.report_progress()."""
+
+    def __init__(self, ctx: Any):  # ctx: Context from fastmcp
+        self.ctx = ctx
+        self.progress_count = 0
+
+    async def emit(self, message: str, stage: str = "") -> None:
+        """Emit progress via MCP Context."""
+        self.progress_count += 1
+        clean_msg = json.dumps(f"{stage}: {message}" if stage else message)[1:-1]
+        await self.ctx.report_progress(progress=float(self.progress_count), total=100.0, message=clean_msg)
 
 
-async def emit_progress(message: str, stage: str = "") -> None:
-    """Emit progress update via configured handler."""
-    logger.info(f"[Progress] {f'{stage}: ' if stage else ''}{message}")
-    handler = get_progress_handler()
-    await handler.emit(message, stage)
+class NoOpProgressHandler:
+    """No-op progress handler for testing or when progress is disabled."""
+
+    async def emit(self, message: str, stage: str = "") -> None:
+        """No-op implementation."""
+        pass

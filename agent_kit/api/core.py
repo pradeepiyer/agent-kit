@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from agent_kit.agents.base_agent import BaseAgent
+from agent_kit.api.progress import ProgressHandler
 from agent_kit.clients.openai_client import OpenAIClient
 
 logger = logging.getLogger(__name__)
@@ -15,9 +16,10 @@ logger = logging.getLogger(__name__)
 class AgentSession:
     """Manages state for a single user session."""
 
-    def __init__(self, session_id: str, openai_client: OpenAIClient):
+    def __init__(self, session_id: str, openai_client: OpenAIClient, progress_handler: ProgressHandler):
         self.session_id = session_id
         self.openai_client = openai_client
+        self.progress_handler = progress_handler
         self.created_at = datetime.now()
         self.last_accessed = datetime.now()
         self.agents: dict[str, BaseAgent] = {}
@@ -43,7 +45,7 @@ class AgentSession:
                 return self.agents[agent_key]
 
             logger.info(f"Creating {agent_key} for session {self.session_id}")
-            agent = agent_class(self.openai_client)
+            agent = agent_class(self.openai_client, self.progress_handler)
             self.agents[agent_key] = agent
             return agent
 
@@ -92,10 +94,10 @@ class SessionStore:
         self._lock = asyncio.Lock()
         logger.info(f"SessionStore initialized with TTL={default_ttl}s")
 
-    async def create_session(self) -> str:
+    async def create_session(self, progress_handler: ProgressHandler) -> str:
         """Create a new session and return session ID."""
         session_id = str(uuid.uuid4())
-        session = AgentSession(session_id, self.openai_client)
+        session = AgentSession(session_id, self.openai_client, progress_handler)
 
         async with self._lock:
             self.sessions[session_id] = session
@@ -115,8 +117,6 @@ class SessionStore:
                 logger.warning(f"Session {session_id} not found in store")
                 return None
 
-            # Refresh last_accessed on any access (refresh-on-access pattern)
-            # This prevents expiry during active usage, even for long operations
             old_age = (datetime.now() - session.last_accessed).total_seconds()
             session.last_accessed = datetime.now()
             logger.debug(f"Session {session_id} accessed (was {old_age:.2f}s old, refreshed to prevent expiry)")

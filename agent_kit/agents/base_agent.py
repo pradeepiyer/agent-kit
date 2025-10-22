@@ -16,36 +16,24 @@ from agent_kit.prompts.models import PromptConfig
 from ..clients.openai_client import OpenAIClient
 from ..config.config import get_config
 from ..exceptions import HelloAgentError
-from agent_kit.api.progress import emit_progress
+from agent_kit.api.progress import ProgressHandler
+from pathlib import Path
 
 
 class BaseAgent(ABC):
     """Base class for all Hello Agent components with common functionality."""
 
-    def __init__(self, openai_client: OpenAIClient):
+    def __init__(self, openai_client: OpenAIClient, progress_handler: ProgressHandler):
         """Initialize base agent with common setup."""
-        from pathlib import Path
-
         self.client = openai_client
+        self.progress_handler = progress_handler
         self.logger = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
         self.last_response_id: str | None = None
-        # Initialize PromptLoader to search ./agents/ directory
+
         self.prompt_loader = PromptLoader(search_paths=[Path.cwd() / "agents"])
         self.last_prompt_config: PromptConfig | None = None
         self.prompt_cache_key: str | None = None
         self.agent_type = self.__class__.__name__.replace("Agent", "").lower()
-
-    def get_agent_config(self, key: str, default: Any = None) -> Any:
-        """Get agent-specific config value with fallback to default.
-
-        Args:
-            key: Config key to retrieve
-            default: Default value if key not found
-
-        Returns:
-            Config value or default
-        """
-        return get_config().agent_configs.get(self.agent_type, {}).get(key, default)
 
     def _process_response_metadata(
         self,
@@ -118,14 +106,11 @@ class BaseAgent(ABC):
         if not reasoning_items:
             return
 
-        # Extract and emit summary text from first reasoning item
         for item in reasoning_items:
             if hasattr(item, "summary") and item.summary:
                 for summary_part in item.summary:
                     if hasattr(summary_part, "text") and summary_part.text:
-                        await emit_progress(summary_part.text, stage="reasoning")
-                        self.logger.debug(f"Emitted reasoning summary: {summary_part.text[:100]}...")
-                        return  # Only emit first summary
+                        await self.progress_handler.emit(summary_part.text, stage="reasoning")
 
     async def _execute_tool_calls(
         self, response: Any, tool_executor: Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]] | None
@@ -137,7 +122,7 @@ class BaseAgent(ABC):
         if not tool_calls:
             return False, []
 
-        await emit_progress(
+        await self.progress_handler.emit(
             f"Executing {len(tool_calls)} tool(s): {', '.join(getattr(tc, 'name', 'unknown') for tc in tool_calls)}",
             "tools",
         )
@@ -194,7 +179,7 @@ class BaseAgent(ABC):
                 f"Iteration {iteration + 1}/{max_iterations} - Current input messages: {len(input_list)}, "
                 f"Instructions length: {len(instructions)}"
             )
-            await emit_progress(f"Processing iteration {iteration + 1}/{max_iterations}")
+            await self.progress_handler.emit(f"Processing iteration {iteration + 1}/{max_iterations}")
 
             # Disable tools on last iteration if we have a response format
             tool_choice, tools_to_pass = (
@@ -241,7 +226,7 @@ class BaseAgent(ABC):
                 if iteration == max_iterations - 1:
                     self.logger.info(f"Reached max iterations ({max_iterations}), finalizing response")
 
-                await emit_progress("Finalizing response", "complete")
+                await self.progress_handler.emit("Finalizing response", "complete")
 
                 # Try to parse structured output if format specified
                 if response_format and hasattr(response, "output_text") and response.output_text:

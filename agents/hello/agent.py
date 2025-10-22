@@ -3,6 +3,7 @@
 import logging
 
 from agent_kit.agents.base_agent import BaseAgent
+from agent_kit.api.progress import ProgressHandler
 from agent_kit.clients.openai_client import OpenAIClient
 from agent_kit.config.config import get_config
 
@@ -14,29 +15,22 @@ logger = logging.getLogger(__name__)
 class HelloAgent(BaseAgent):
     """A simple hello agent that can chat and use tools."""
 
-    def __init__(self, openai_client: OpenAIClient):
+    def __init__(self, openai_client: OpenAIClient, progress_handler: ProgressHandler):
         """Initialize Hello Agent."""
-        super().__init__(openai_client)
+        super().__init__(openai_client, progress_handler)
         logger.info("HelloAgent initialized")
 
     async def process(self, query: str, continue_conversation: bool = False) -> str:
-        """Process a query with optional conversation continuation.
-
-        Args:
-            query: User query to process
-            continue_conversation: If True, continues previous conversation using last_response_id.
-                                  If False, starts fresh conversation.
-
-        Returns:
-            Response message
-        """
+        """Process a query with optional conversation continuation."""
         logger.info(f"Processing query (continue={continue_conversation}): {query[:100]}")
 
         # Render orchestrator prompt
         prompts = self.render_prompt("hello", "orchestrator")
 
         # Get max iterations from agent config (with fallback to global default)
-        max_iterations = self.get_agent_config("max_iterations", get_config().agents.max_iterations)
+        config = get_config()
+        agent_config = config.agent_configs.get(self.agent_type, {})
+        max_iterations = agent_config.get("max_iterations", config.agents.max_iterations)
 
         # Execute the conversation with tools
         response = await self.execute_tool_conversation(
@@ -46,7 +40,7 @@ class HelloAgent(BaseAgent):
             tool_executor=execute_tool,
             max_iterations=max_iterations,
             previous_response_id=self.last_response_id if continue_conversation else None,
-            response_format=None,  # No structured output for conversational responses
+            response_format=None,
         )
 
         # Extract text from response

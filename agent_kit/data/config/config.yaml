@@ -58,6 +58,32 @@ agents:
   max_iterations: 20               # Maximum tool-calling iterations for agents
   max_parallel_tools: 5            # Maximum parallel tool executions
 
+# Interface Configuration
+# Console, HTTP server (REST/MCP), and MCP stdio mode
+interfaces:
+  # Shared session configuration for all interfaces
+  session_ttl: 3600                # Session time-to-live in seconds (1 hour)
+
+  # HTTP Server (supports REST API and/or MCP over HTTP)
+  http:
+    enabled: false                 # Enable HTTP server
+    host: "127.0.0.1"              # Server host
+    port: 8080                     # Server port
+    cors_origins:
+      - "http://localhost:*"
+      - "http://127.0.0.1:*"
+    rest_api: true                 # Enable REST API endpoints
+    mcp_http: true                 # Enable MCP tools over HTTP
+    mcp_mount_path: "/mcp"         # Where to mount MCP tools
+
+  # Interactive console interface
+  console:
+    enabled: true                  # Enable console interface
+
+  # MCP stdio mode for Claude Desktop
+  mcp_stdio:
+    enabled: false                 # Enable MCP stdio mode
+
 # Agent-Specific Configuration
 # Agent configs are stored in agent directories (e.g., agents/hello/config.yaml)
 # and can be overridden in ~/.agent-kit/<agent-name>.yaml

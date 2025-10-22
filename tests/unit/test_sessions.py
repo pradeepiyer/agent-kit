@@ -8,6 +8,7 @@ import pytest
 
 from agents.hello.agent import HelloAgent
 from agent_kit.api.core import AgentSession, SessionStore
+from agent_kit.api.progress import NoOpProgressHandler
 
 
 @pytest.mark.asyncio
@@ -15,7 +16,7 @@ async def test_create_and_get_session(mock_openai_client: AsyncMock) -> None:
     """Session creates and retrieves correctly."""
     store = SessionStore(mock_openai_client, default_ttl=3600)
 
-    session_id = await store.create_session()
+    session_id = await store.create_session(NoOpProgressHandler())
 
     assert session_id is not None
     session = await store.get_session(session_id)
@@ -36,7 +37,7 @@ async def test_get_nonexistent_session_returns_none(mock_openai_client: AsyncMoc
 @pytest.mark.asyncio
 async def test_agent_creates_lazily_and_reuses(mock_openai_client: AsyncMock) -> None:
     """Agent creates lazily and reuses on subsequent calls."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     # First call creates agent
     agent1 = await session.use_agent(HelloAgent)
@@ -50,7 +51,7 @@ async def test_agent_creates_lazily_and_reuses(mock_openai_client: AsyncMock) ->
 @pytest.mark.asyncio
 async def test_session_expiration(mock_openai_client: AsyncMock) -> None:
     """Session expires after TTL."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     # Set last_accessed to past
     session.last_accessed = datetime.now() - timedelta(seconds=3700)
@@ -63,7 +64,7 @@ async def test_session_expiration(mock_openai_client: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_session_not_expired_within_ttl(mock_openai_client: AsyncMock) -> None:
     """Session not expired within TTL."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     # Set last_accessed to recent
     session.last_accessed = datetime.now() - timedelta(seconds=100)
@@ -76,7 +77,7 @@ async def test_session_not_expired_within_ttl(mock_openai_client: AsyncMock) -> 
 @pytest.mark.asyncio
 async def test_store_and_retrieve_result(mock_openai_client: AsyncMock) -> None:
     """Result stores and retrieves correctly."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     await session.store_result("HelloAgent", "test result", extra="metadata")
 
@@ -91,7 +92,7 @@ async def test_store_and_retrieve_result(mock_openai_client: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_clear_specific_result(mock_openai_client: AsyncMock) -> None:
     """Clearing specific result works correctly."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     await session.store_result("HelloAgent", "result1")
     await session.clear_results("HelloAgent")
@@ -104,7 +105,7 @@ async def test_clear_specific_result(mock_openai_client: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_clear_all_results(mock_openai_client: AsyncMock) -> None:
     """Clearing all results works correctly."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     await session.store_result("HelloAgent", "result1")
     await session.clear_results()
@@ -120,8 +121,8 @@ async def test_cleanup_expired_sessions(mock_openai_client: AsyncMock) -> None:
     store = SessionStore(mock_openai_client, default_ttl=1)
 
     # Create sessions
-    session_id1 = await store.create_session()
-    session_id2 = await store.create_session()
+    session_id1 = await store.create_session(NoOpProgressHandler())
+    session_id2 = await store.create_session(NoOpProgressHandler())
 
     # Make first session old
     session1 = await store.get_session(session_id1)
@@ -142,7 +143,7 @@ async def test_delete_session(mock_openai_client: AsyncMock) -> None:
     """Session deletes correctly."""
     store = SessionStore(mock_openai_client)
 
-    session_id = await store.create_session()
+    session_id = await store.create_session(NoOpProgressHandler())
     deleted = await store.delete_session(session_id)
 
     assert deleted is True
@@ -165,8 +166,8 @@ async def test_session_count(mock_openai_client: AsyncMock) -> None:
     store = SessionStore(mock_openai_client)
 
     count_before = await store.get_session_count()
-    await store.create_session()
-    await store.create_session()
+    await store.create_session(NoOpProgressHandler())
+    await store.create_session(NoOpProgressHandler())
     count_after = await store.get_session_count()
 
     assert count_after == count_before + 2
@@ -175,7 +176,7 @@ async def test_session_count(mock_openai_client: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_concurrent_agent_creation(mock_openai_client: AsyncMock) -> None:
     """Concurrent agent creation handled safely."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     # Try to create same agent concurrently
     agents = await asyncio.gather(
@@ -190,7 +191,7 @@ async def test_concurrent_agent_creation(mock_openai_client: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_update_last_active_agent(mock_openai_client: AsyncMock) -> None:
     """Last active agent updates correctly."""
-    session = AgentSession("test-session", mock_openai_client)
+    session = AgentSession("test-session", mock_openai_client, NoOpProgressHandler())
 
     await session.update_last_active("HelloAgent")
 

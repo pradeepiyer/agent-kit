@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from agent_kit.api.core import SessionStore
-from agent_kit.api.progress import set_progress_handler
+from agent_kit.api.progress import ConsoleProgressHandler
 from agent_kit.config import setup_configuration
 from agent_kit.config.config import close_all_clients, get_openai_client
 from agent_kit.utils import get_user_dir
@@ -40,19 +40,6 @@ def set_console(console: Console) -> None:
     _console = console
 
 
-class ConsoleProgressHandler:
-    """Terminal output via rich console."""
-
-    async def emit(self, message: str, stage: str = "") -> None:
-        """Emit simple progress message to console."""
-
-        console = get_console()
-        if stage == "reasoning":
-            console.print(f"💭 [dim italic]{message}[/dim italic]")
-        else:
-            console.print(f"⚡ {message}")
-
-
 class SlashCommands:
     """Handle slash commands for quick operations."""
 
@@ -71,7 +58,8 @@ class SlashCommands:
 
     async def initialize(self) -> None:
         """Async initialization for session creation."""
-        self.session_id = await self.session_store.create_session()
+        progress_handler = ConsoleProgressHandler(self.console)
+        self.session_id = await self.session_store.create_session(progress_handler)
         logger.info(f"SlashCommands initialized with session_id: {self.session_id}")
         session_count = await self.session_store.get_session_count()
         logger.info(f"SessionStore has {session_count} sessions")
@@ -249,11 +237,7 @@ class SlashCommands:
 
 
 async def run_console(commands_class: type[SlashCommands] = SlashCommands) -> None:
-    """Run interactive console interface.
-
-    Args:
-        commands_class: SlashCommands subclass to use for handling commands and chat
-    """
+    """Run interactive console interface."""
     console = get_console()
 
     try:
@@ -262,9 +246,6 @@ async def run_console(commands_class: type[SlashCommands] = SlashCommands) -> No
         console.print(f"[red]Error: Configuration setup failed: {e}[/red]")
         console.print("[dim]Please check your configuration and environment variables[/dim]")
         return
-
-    # Set progress handler for console interface
-    set_progress_handler(ConsoleProgressHandler())
 
     slash_commands = commands_class(console)
     await slash_commands.initialize()

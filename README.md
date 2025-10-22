@@ -4,12 +4,14 @@ Pure Python library for building AI agents with OpenAI Responses API.
 
 ## Features
 
-- Conversation continuation via `previous_response_id` (no message array juggling)
-- Session management with automatic cleanup
-- YAML-based prompts and configuration
-- Connection pooling with retry logic
-- Tool integration (web search, time utilities)
-- Interactive console with slash commands
+- **Multiple Interfaces**: Console, REST API with SSE streaming, and MCP (Model Context Protocol)
+- **Conversation Continuation**: Via `previous_response_id` (no message array juggling)
+- **Session Management**: Automatic cleanup with configurable TTL
+- **Progress Reporting**: Unified progress handling across all interfaces
+- **YAML Configuration**: Prompts and configuration with environment variable substitution
+- **Connection Pooling**: With retry logic and timeout handling
+- **Tool Integration**: Web search, time utilities, and custom tools
+- **Agent Registry**: Dynamic route and tool generation for HTTP protocols
 
 ## Quick Start
 
@@ -35,12 +37,16 @@ The hello agent demonstrates the framework patterns and uses `~/.hello-agent` fo
 
 ```python
 from agent_kit import SessionStore
+from agent_kit.api.progress import ConsoleProgressHandler
 from agents.hello.agent import HelloAgent
 from agent_kit.config import get_openai_client
+from rich.console import Console
 
-# Create session
+# Create session with progress handler
+console = Console()
+progress_handler = ConsoleProgressHandler(console)
 session_store = SessionStore(get_openai_client())
-session_id = await session_store.create_session()
+session_id = await session_store.create_session(progress_handler)
 session = await session_store.get_session(session_id)
 
 # Use agent
@@ -61,8 +67,13 @@ Agent-Kit is designed for extension. See `agents/hello/` for the complete patter
 
 ```python
 from agent_kit import BaseAgent
+from agent_kit.api.progress import ProgressHandler
+from agent_kit.clients.openai_client import OpenAIClient
 
 class MyAgent(BaseAgent):
+    def __init__(self, openai_client: OpenAIClient, progress_handler: ProgressHandler):
+        super().__init__(openai_client, progress_handler)
+
     async def process(self, query: str, continue_conversation: bool = False) -> str:
         prompts = self.render_prompt("my_agent", "orchestrator")
 
@@ -115,6 +126,83 @@ class MyCommands(SlashCommands):
 await run_console(MyCommands)
 ```
 
+### HTTP Interfaces (REST and MCP)
+
+Agent-Kit supports REST API with SSE streaming and MCP protocol for Claude Desktop integration.
+
+#### Registry Setup
+
+```python
+from agent_kit.api.http import AgentRegistry, create_server
+from agent_kit.config import get_config
+from pydantic import BaseModel, Field
+
+# Define request/response models
+class MyRequest(BaseModel):
+    query: str = Field(..., description="User query")
+    session_id: str | None = None
+
+class MyResponse(BaseModel):
+    response: str = Field(..., description="Agent response")
+    session_id: str
+
+# Create registry and register agents
+registry = AgentRegistry()
+registry.register(
+    name="my_agent",
+    agent_class=MyAgent,
+    description="My agent description for API docs and MCP tools",
+    request_model=MyRequest,
+    response_model=MyResponse,
+)
+
+# Create HTTP server
+config = get_config()
+app = create_server(registry, config.interfaces.http, config.interfaces.session_ttl)
+```
+
+#### Running the Server
+
+```bash
+# Or via configuration-driven entry point (see hello agent example)
+uv run python -m agents.hello  # Starts interface based on config
+```
+
+#### REST API Endpoints
+
+- `POST /api/v1/sessions` - Create session
+- `GET /api/v1/sessions/{id}` - Get session info
+- `DELETE /api/v1/sessions/{id}` - Delete session
+- `POST /api/v1/{agent_name}` - Execute agent (SSE streaming)
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/info` - API information
+
+#### MCP Integration
+
+MCP tools are automatically generated from registered agents. Two modes are supported:
+
+**HTTP Mode**: Mount at `/mcp` for web-based access
+- Enable via `interfaces.http.mcp_http: true` in config
+- Access tools via HTTP transport at configured mount path
+
+**Stdio Mode**: For Claude Desktop integration
+- Enable via `interfaces.mcp_stdio.enabled: true` in config
+- Configure Claude Desktop:
+
+```json
+// ~/Library/Application Support/Claude/claude_desktop_config.json
+{
+  "mcpServers": {
+    "hello-agent": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "agents.hello"]
+    }
+  }
+}
+```
+
+Note: Only one interface can be active at a time. Stdio mode requires disabling console and HTTP interfaces in config.
+
 ### Customizing User Directory
 
 By default, agent-kit auto-detects your application name and uses `~/.{app-name}` for configuration. You can customize this:
@@ -149,6 +237,24 @@ openai:
 
 agents:
   max_iterations: 20
+
+interfaces:
+  session_ttl: 3600  # Shared across all interfaces
+
+  http:                # HTTP server for REST/MCP
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+    cors_origins: ["http://localhost:*"]
+    rest_api: true     # Enable REST endpoints
+    mcp_http: true     # Enable MCP over HTTP
+    mcp_mount_path: "/mcp"
+
+  console:
+    enabled: true
+
+  mcp_stdio:
+    enabled: false     # MCP stdio for Claude Desktop
 ```
 
 Agent config (`~/.{app-name}/my_agent.yaml`):
