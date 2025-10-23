@@ -76,6 +76,11 @@ interfaces:
     mcp_http: true                 # Enable MCP tools over HTTP
     mcp_mount_path: "/mcp"         # Where to mount MCP tools
 
+    # OAuth Authentication
+    auth_enabled: true                              # Enable OAuth authentication (default: true)
+    oauth_issuer: "https://accounts.google.com"     # OAuth provider URL (e.g., Google, GitHub)
+    oauth_client_id: "${OAUTH_CLIENT_ID}"           # OAuth client ID from provider
+
   # Interactive console interface
   console:
     enabled: true                  # Enable console interface

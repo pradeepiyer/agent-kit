@@ -6,9 +6,12 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from collections.abc import Awaitable, Callable
+
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer
 
 from agent_kit.api.core import SessionStore
 from agent_kit.api.http.mcp import get_mcp_app, set_mcp_globals
@@ -19,6 +22,8 @@ from agent_kit.config.config import close_all_clients, get_openai_client
 from agent_kit.config.models import HttpConfig
 
 logger = logging.getLogger(__name__)
+
+_http_security = HTTPBearer(auto_error=False)
 
 
 @asynccontextmanager
@@ -88,6 +93,7 @@ def create_server(registry: AgentRegistry, http_config: HttpConfig, session_ttl:
     # Store registry and session store in app state
     app.state.registry = registry
     app.state.session_store = session_store
+    app.state.http_config = http_config
 
     # CORS middleware
     app.add_middleware(
@@ -98,20 +104,61 @@ def create_server(registry: AgentRegistry, http_config: HttpConfig, session_ttl:
         allow_headers=["*"],
     )
 
+    # Auth middleware for MCP HTTP endpoints
+    if http_config.auth_enabled and http_config.mcp_http:
+
+        @app.middleware("http")
+        async def mcp_auth_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # pyright: ignore[reportUnusedFunction]
+            """Check authentication for MCP HTTP requests."""
+            # Only check auth for MCP paths
+            if request.url.path.startswith(http_config.mcp_mount_path):
+                # Import here to avoid circular dependency
+                from agent_kit.api.http.auth import verify_oauth_token
+
+                # Extract token
+                auth_header = request.headers.get("Authorization")
+                if not auth_header or not auth_header.startswith("Bearer "):
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"detail": "Missing authentication token"},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+
+                token = auth_header[7:]  # Remove "Bearer " prefix
+
+                # Verify token
+                if not http_config.oauth_issuer or not http_config.oauth_client_id:
+                    logger.error("OAuth authentication enabled but oauth_issuer or oauth_client_id not configured")
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content={"detail": "Authentication not properly configured"},
+                    )
+
+                try:
+                    await verify_oauth_token(token, http_config.oauth_issuer, http_config.oauth_client_id)
+                except HTTPException as e:
+                    return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+            return await call_next(request)
+
+    # Global exception handlers
+    @app.exception_handler(ValueError)
+    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)})
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(Exception)
+    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        logger.exception(f"Unhandled exception for {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Internal server error"}
+        )
+
     # Mount REST routes
     if http_config.rest_api:
-        # Exception handlers
-        @app.exception_handler(ValueError)
-        async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
-            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)})
-
-        @app.exception_handler(Exception)
-        async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
-            logger.exception(f"Unhandled exception for {request.url}: {exc}")
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Internal server error"}
-            )
-
         # Create and include REST router
         rest_router = create_rest_routes(registry, session_store)
         app.include_router(rest_router)

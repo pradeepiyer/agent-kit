@@ -119,6 +119,9 @@ class HttpConfig(BaseModel):
     rest_api: bool = Field(default=True, description="Enable REST API endpoints")
     mcp_http: bool = Field(default=True, description="Enable MCP tools over HTTP")
     mcp_mount_path: str = Field(default="/mcp", description="Mount path for MCP tools")
+    auth_enabled: bool = Field(default=True, description="Enable OAuth authentication")
+    oauth_issuer: str | None = Field(default=None, description="OAuth issuer URL (e.g., https://accounts.google.com)")
+    oauth_client_id: str | None = Field(default=None, description="OAuth client ID")
 
 
 class ConsoleConfig(BaseModel):

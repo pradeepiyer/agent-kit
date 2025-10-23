@@ -6,11 +6,12 @@ import json
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from fastapi.responses import Response, StreamingResponse
 
 from agent_kit.api.core import SessionStore
 from agent_kit.api.http import models
+from agent_kit.api.http.auth import get_current_user
 from agent_kit.api.http.registry import AgentRegistry
 from agent_kit.api.progress import RESTProgressHandler
 
@@ -23,7 +24,7 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
     """Create REST routes dynamically based on registered agents."""
 
     @router.post("/sessions", response_model=models.SessionCreateResponse, status_code=status.HTTP_201_CREATED)
-    async def create_session() -> models.SessionCreateResponse:  # pyright: ignore[reportUnusedFunction]
+    async def create_session(user: str = Depends(get_current_user)) -> models.SessionCreateResponse:  # pyright: ignore[reportUnusedFunction]
         """Create new session with no-op progress handler (will be replaced per-request)."""
         from agent_kit.api.progress import NoOpProgressHandler
 
@@ -31,7 +32,7 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
         return models.SessionCreateResponse(session_id=session_id)
 
     @router.get("/sessions/{session_id}", response_model=models.SessionInfo)
-    async def get_session_info(session_id: Annotated[str, Path()]) -> models.SessionInfo:  # pyright: ignore[reportUnusedFunction]
+    async def get_session_info(session_id: Annotated[str, Path()], user: str = Depends(get_current_user)) -> models.SessionInfo:  # pyright: ignore[reportUnusedFunction]
         """Get session information."""
         session = await session_store.get_session(session_id)
         if not session:
@@ -45,7 +46,7 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
         )
 
     @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-    async def delete_session(session_id: Annotated[str, Path()]) -> Response:  # pyright: ignore[reportUnusedFunction]
+    async def delete_session(session_id: Annotated[str, Path()], user: str = Depends(get_current_user)) -> Response:  # pyright: ignore[reportUnusedFunction]
         """Delete session."""
         await session_store.delete_session(session_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -63,7 +64,9 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
     # Create dynamic agent routes
     for agent_name, _ in registry.get_all().items():
 
-        async def create_agent_endpoint(request: Any, agent_name: str = agent_name):
+        async def create_agent_endpoint(
+            request: Any, user: str = Depends(get_current_user), agent_name: str = agent_name
+        ):
             """Dynamic agent endpoint with SSE streaming."""
             return await stream_agent_operation(request, agent_name, session_store, registry)
 
