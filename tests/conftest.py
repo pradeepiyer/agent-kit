@@ -181,7 +181,9 @@ def test_session_store(mock_openai_client: AsyncMock) -> Any:
 @pytest.fixture
 def test_app(test_registry: Any, test_session_store: Any) -> Any:
     """Test FastAPI application."""
+    from agent_kit.api.http.auth import get_current_user
     from agent_kit.api.http.rest import create_rest_routes
+    from agent_kit.config.models import HttpConfig
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
 
@@ -193,9 +195,19 @@ def test_app(test_registry: Any, test_session_store: Any) -> Any:
         CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
     )
 
+    # Mock HTTP config with auth disabled
+    http_config = HttpConfig(enabled=True, auth_enabled=False, rest_api=True, mcp_http=False)
+
     # Store session store in app state
     app.state.session_store = test_session_store
     app.state.registry = test_registry
+    app.state.http_config = http_config
+
+    # Override auth dependency to skip authentication in tests
+    async def mock_get_current_user() -> str:
+        return "anonymous"
+
+    app.dependency_overrides[get_current_user] = mock_get_current_user
 
     # Create and include REST router
     rest_router = create_rest_routes(test_registry, test_session_store)
