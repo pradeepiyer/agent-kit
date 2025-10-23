@@ -108,7 +108,9 @@ def create_server(registry: AgentRegistry, http_config: HttpConfig, session_ttl:
     if http_config.auth_enabled and http_config.mcp_http:
 
         @app.middleware("http")
-        async def mcp_auth_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # pyright: ignore[reportUnusedFunction]
+        async def mcp_auth_middleware(  # pyright: ignore[reportUnusedFunction]
+            request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        ) -> Response:
             """Check authentication for MCP HTTP requests."""
             # Only check auth for MCP paths
             if request.url.path.startswith(http_config.mcp_mount_path):

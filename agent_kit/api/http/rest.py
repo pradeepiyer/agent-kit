@@ -32,7 +32,9 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
         return models.SessionCreateResponse(session_id=session_id)
 
     @router.get("/sessions/{session_id}", response_model=models.SessionInfo)
-    async def get_session_info(session_id: Annotated[str, Path()], user: str = Depends(get_current_user)) -> models.SessionInfo:  # pyright: ignore[reportUnusedFunction]
+    async def get_session_info(  # pyright: ignore[reportUnusedFunction]
+        session_id: Annotated[str, Path()], user: str = Depends(get_current_user)
+    ) -> models.SessionInfo:
         """Get session information."""
         session = await session_store.get_session(session_id)
         if not session:
