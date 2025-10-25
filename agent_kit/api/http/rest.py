@@ -4,6 +4,7 @@
 import asyncio
 import json
 import logging
+from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
@@ -68,8 +69,7 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
             version="0.1.0",
             api_version="v1",
             agents=[
-                models.AgentInfo(name=name, description=reg.description)
-                for name, reg in registry.get_all().items()
+                models.AgentInfo(name=name, description=reg.description) for name, reg in registry.get_all().items()
             ],
             auth_required=config.interfaces.http.auth_enabled,
         )
@@ -77,14 +77,16 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
     # Create dynamic agent routes
     for agent_name, registration in registry.get_all().items():
 
-        def make_endpoint(reg: AgentRegistration, name: str):
+        def make_endpoint(
+            reg: AgentRegistration, name: str
+        ) -> Callable[[Any, str], Coroutine[Any, Any, StreamingResponse]]:
             """Factory to create endpoint with proper request model type."""
 
-            async def endpoint(request: reg.request_model, user: str = Depends(get_current_user)):  # type: ignore[valid-type]
+            async def endpoint(request: reg.request_model, user: str = Depends(get_current_user)) -> StreamingResponse:  # type: ignore[valid-type]
                 """Dynamic agent endpoint with SSE streaming."""
                 return await stream_agent_operation(request, name, session_store, registry)
 
-            return endpoint
+            return endpoint  # type: ignore[return-value]
 
         # Add route dynamically with correct request model
         router.add_api_route(

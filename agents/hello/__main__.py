@@ -19,7 +19,6 @@ from .console import HelloCommands
 from .http import run_hello_stdio
 
 
-
 def main():
     """Entry point wrapper."""
     try:

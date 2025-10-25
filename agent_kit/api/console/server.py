@@ -97,7 +97,10 @@ class SlashCommands:
             "Copy default configuration files to user directory\nUsage: /init",
         )
         self.register_command(
-            "/clear", self._handle_clear, "Clear conversation context", "Clear conversation context (starts fresh conversation)\nUsage: /clear"
+            "/clear",
+            self._handle_clear,
+            "Clear conversation context",
+            "Clear conversation context (starts fresh conversation)\nUsage: /clear",
         )
         self.register_command("/exit", self._handle_exit, "Exit console", "Exit console\nUsage: /exit")
 
