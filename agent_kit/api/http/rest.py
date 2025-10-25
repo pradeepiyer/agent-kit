@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from fastapi.responses import Response, StreamingResponse
 
 from agent_kit.api.core import SessionStore
@@ -60,18 +60,17 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
         return models.HealthResponse(status="ok", version="0.1.0")
 
     @router.get("/info", response_model=models.InfoResponse)
-    async def info() -> models.InfoResponse:  # pyright: ignore[reportUnusedFunction]
+    async def info(request: Request) -> models.InfoResponse:  # pyright: ignore[reportUnusedFunction]
         """API information."""
-        from agent_kit.config import get_config
-
-        config = get_config()
+        # Get HTTP config from app state (set by server.py)
+        http_config = request.app.state.http_config
         return models.InfoResponse(
             version="0.1.0",
             api_version="v1",
             agents=[
                 models.AgentInfo(name=name, description=reg.description) for name, reg in registry.get_all().items()
             ],
-            auth_required=config.interfaces.http.auth_enabled,
+            auth_required=http_config.auth_enabled,
         )
 
     # Create dynamic agent routes

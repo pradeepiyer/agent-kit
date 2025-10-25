@@ -26,7 +26,9 @@ def test_health_and_info_endpoints(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["api_version"] == "v1"
-    assert "hello" in data["agents"]
+    # Check that hello agent is in the agents list
+    agent_names = [agent["name"] for agent in data["agents"]]
+    assert "hello" in agent_names
 
 
 def test_session_lifecycle(client: TestClient) -> None:
