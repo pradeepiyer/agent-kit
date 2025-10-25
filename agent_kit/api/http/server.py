@@ -173,4 +173,23 @@ def create_server(registry: AgentRegistry, http_config: HttpConfig, session_ttl:
         app.mount(http_config.mcp_mount_path, mcp_app)
         logger.info(f"MCP tools enabled at {http_config.mcp_mount_path}")
 
+    # Serve static UI files (must be last to avoid conflicts with API routes)
+    from importlib.resources import files as resource_files
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
+
+    # Try package resources first (installed package)
+    try:
+        ui_resource = resource_files("agent_kit.api.http") / "ui"
+        # Convert Traversable to Path via string (works for both dev and installed)
+        ui_path = Path(str(ui_resource))
+
+        if ui_path.exists() and ui_path.is_dir():
+            app.mount("/", StaticFiles(directory=str(ui_path), html=True), name="ui")
+            logger.info(f"UI static files enabled from package resources: {ui_path}")
+        else:
+            logger.warning(f"UI path exists but is not a directory: {ui_path}")
+    except (ImportError, FileNotFoundError, AttributeError) as e:
+        logger.warning(f"UI files not found in package resources: {e}")
+
     return app

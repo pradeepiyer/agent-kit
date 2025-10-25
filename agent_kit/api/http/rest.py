@@ -12,7 +12,7 @@ from fastapi.responses import Response, StreamingResponse
 from agent_kit.api.core import SessionStore
 from agent_kit.api.http import models
 from agent_kit.api.http.auth import get_current_user
-from agent_kit.api.http.registry import AgentRegistry
+from agent_kit.api.http.registry import AgentRegistration, AgentRegistry
 from agent_kit.api.progress import RESTProgressHandler
 
 logger = logging.getLogger(__name__)
@@ -61,21 +61,35 @@ def create_rest_routes(registry: AgentRegistry, session_store: SessionStore) -> 
     @router.get("/info", response_model=models.InfoResponse)
     async def info() -> models.InfoResponse:  # pyright: ignore[reportUnusedFunction]
         """API information."""
-        return models.InfoResponse(version="0.1.0", api_version="v1", agents=registry.list_agents())
+        from agent_kit.config import get_config
+
+        config = get_config()
+        return models.InfoResponse(
+            version="0.1.0",
+            api_version="v1",
+            agents=[
+                models.AgentInfo(name=name, description=reg.description)
+                for name, reg in registry.get_all().items()
+            ],
+            auth_required=config.interfaces.http.auth_enabled,
+        )
 
     # Create dynamic agent routes
-    for agent_name, _ in registry.get_all().items():
+    for agent_name, registration in registry.get_all().items():
 
-        async def create_agent_endpoint(
-            request: Any, user: str = Depends(get_current_user), agent_name: str = agent_name
-        ):
-            """Dynamic agent endpoint with SSE streaming."""
-            return await stream_agent_operation(request, agent_name, session_store, registry)
+        def make_endpoint(reg: AgentRegistration, name: str):
+            """Factory to create endpoint with proper request model type."""
 
-        # Add route dynamically
+            async def endpoint(request: reg.request_model, user: str = Depends(get_current_user)):  # type: ignore[valid-type]
+                """Dynamic agent endpoint with SSE streaming."""
+                return await stream_agent_operation(request, name, session_store, registry)
+
+            return endpoint
+
+        # Add route dynamically with correct request model
         router.add_api_route(
             f"/{agent_name}",
-            create_agent_endpoint,
+            make_endpoint(registration, agent_name),
             methods=["POST"],
             response_class=StreamingResponse,
             name=f"{agent_name}_execute",
@@ -144,7 +158,13 @@ async def stream_agent_operation(
                         break
 
                 # Serialize result
-                result_data = result.model_dump() if hasattr(result, "model_dump") else str(result)
+                if hasattr(result, "model_dump"):
+                    result_data = result.model_dump()
+                elif isinstance(result, str):
+                    # Wrap plain string results in expected format
+                    result_data = {"response": result, "session_id": session_id}
+                else:
+                    result_data = str(result)
                 yield f"data: {json.dumps({'type': 'result', 'data': result_data, 'session_id': session_id})}\n\n"
             except Exception as e:
                 logger.exception(f"Agent execution failed: {e}")

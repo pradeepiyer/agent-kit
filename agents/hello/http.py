@@ -15,7 +15,7 @@ def create_hello_registry() -> AgentRegistry:
     registry.register(
         name="hello",
         agent_class=HelloAgent,
-        description="Interactive greeting agent that can chat and use tools like time lookup and web search",
+        description="Hello Agent",
         request_model=HelloRequest,
         response_model=HelloResponse,
     )

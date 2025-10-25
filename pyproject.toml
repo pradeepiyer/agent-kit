@@ -26,6 +26,12 @@ dependencies = [
 [tool.uv]
 package = true
 
+[tool.hatch.build.targets.wheel]
+packages = ["agent_kit"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"agent_kit/api/http/ui" = "agent_kit/api/http/ui"
+
 [dependency-groups]
 dev = [
     "pyright>=1.1.406",

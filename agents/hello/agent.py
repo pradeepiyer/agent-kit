@@ -20,9 +20,9 @@ class HelloAgent(BaseAgent):
         super().__init__(openai_client, progress_handler)
         logger.info("HelloAgent initialized")
 
-    async def process(self, query: str, continue_conversation: bool = False) -> str:
-        """Process a query with optional conversation continuation."""
-        logger.info(f"Processing query (continue={continue_conversation}): {query[:100]}")
+    async def process(self, query: str) -> str:
+        """Process a query, continuing conversation if in same session."""
+        logger.info(f"Processing query: {query[:100]}")
 
         # Render orchestrator prompt
         prompts = self.render_prompt("hello", "orchestrator")
@@ -39,7 +39,7 @@ class HelloAgent(BaseAgent):
             tools=get_tool_definitions(),
             tool_executor=execute_tool,
             max_iterations=max_iterations,
-            previous_response_id=self.last_response_id if continue_conversation else None,
+            previous_response_id=self.last_response_id,
             response_format=None,
         )
 

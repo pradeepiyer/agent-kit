@@ -1,4 +1,4 @@
-.PHONY: test install clean lint sync-deps help wc build build-wheel build-sdist build-all package-info lock-deps check-deps ci console
+.PHONY: test install clean lint sync-deps help wc build build-wheel build-sdist build-all package-info lock-deps check-deps ci run
 
 # Default target
 help:
@@ -11,7 +11,7 @@ help:
 	@echo "  clean        - Remove build artifacts and cache files"
 	@echo "  lint         - Run linter and fix issues with ruff and mypy"
 	@echo "  sync-deps    - Sync uv dependencies and lock file"
-	@echo "  console      - Run hello agent example (interactive chat)"
+	@echo "  run          - Run hello agent example"
 	@echo "  help         - Show this help message"
 	@echo ""
 	@echo "Package Distribution:"
@@ -71,7 +71,7 @@ sync-deps:
 	uv sync
 
 # Run hello agent example
-console:
+run:
 	@echo "💬 Starting hello agent example..."
 	uv run python -m agents.hello
 

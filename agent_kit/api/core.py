@@ -77,6 +77,13 @@ class AgentSession:
                 self.agent_results.pop(agent_key, None)
                 logger.debug(f"Cleared {agent_key} result in session {self.session_id}")
 
+    async def clear_conversation(self) -> None:
+        """Clear conversation context by removing agent instances and results."""
+        async with self._lock:
+            self.agents.clear()
+            self.agent_results.clear()
+            logger.debug(f"Cleared conversation context (agents and results) in session {self.session_id}")
+
     async def is_expired(self, ttl_seconds: int) -> bool:
         """Check if session has expired based on TTL."""
         async with self._lock:

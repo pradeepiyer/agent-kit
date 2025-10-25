@@ -60,7 +60,7 @@ class HelloCommands(SlashCommands):
                 return
 
             agent = cast(HelloAgent, await session.use_agent(HelloAgent))
-            greeting = await agent.process(f"Greet {name}", continue_conversation=False)
+            greeting = await agent.process(f"Greet {name}")
 
             self.console.print("\n[bold green]Hello Agent:[/bold green]")
             self.console.print(greeting, markup=False)
@@ -81,7 +81,7 @@ class HelloCommands(SlashCommands):
                 return
 
             agent = cast(HelloAgent, await session.use_agent(HelloAgent))
-            response = await agent.process(user_input, continue_conversation=True)
+            response = await agent.process(user_input)
 
             self.console.print("\n[bold green]Hello Agent:[/bold green]")
             self.console.print(response, markup=False)

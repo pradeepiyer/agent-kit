@@ -97,7 +97,7 @@ class SlashCommands:
             "Copy default configuration files to user directory\nUsage: /init",
         )
         self.register_command(
-            "/clear", self._handle_clear, "Clear session context", "Clear all session context\nUsage: /clear"
+            "/clear", self._handle_clear, "Clear conversation context", "Clear conversation context (starts fresh conversation)\nUsage: /clear"
         )
         self.register_command("/exit", self._handle_exit, "Exit console", "Exit console\nUsage: /exit")
 
@@ -219,14 +219,14 @@ class SlashCommands:
         self.console.print()
 
     async def _handle_clear(self, args: list[str]) -> None:
-        """Clear all session context."""
+        """Clear conversation context."""
         if not self.session_id:
             self.console.print("[red]Session not initialized[/red]")
             return
         session = await self.session_store.get_session(self.session_id)
         if session:
-            await session.clear_results()
-            self.console.print("[green]✓[/green] Cleared all session context")
+            await session.clear_conversation()
+            self.console.print("[green]✓[/green] Cleared conversation context")
         else:
             self.console.print("[red]Session not found[/red]")
 

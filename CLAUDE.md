@@ -37,7 +37,7 @@ class MyAgent(BaseAgent):
     def __init__(self, openai_client: OpenAIClient, progress_handler: ProgressHandler):
         super().__init__(openai_client, progress_handler)
 
-    async def process(self, query: str, continue_conversation: bool = False) -> str:
+    async def process(self, query: str) -> str:
         prompts = self.render_prompt("agent", "orchestrator")
 
         result = await self.execute_tool_conversation(
@@ -45,11 +45,12 @@ class MyAgent(BaseAgent):
             initial_input=[{"role": "user", "content": query}],
             tools=get_tool_definitions(),
             tool_executor=execute_tool,
-            previous_response_id=self.last_response_id if continue_conversation else None,
+            previous_response_id=self.last_response_id,
             response_format=None,  # Or Pydantic model for structured output
             max_iterations=10
         )
         # response_id is stored internally as self.last_response_id
+        # Conversation continues automatically within same session
         return result
 ```
 

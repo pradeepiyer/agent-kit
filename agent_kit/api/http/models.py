@@ -40,9 +40,17 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class AgentInfo(BaseModel):
+    """Agent metadata."""
+
+    name: str
+    description: str
+
+
 class InfoResponse(BaseModel):
     """API info response."""
 
     version: str
     api_version: str
-    agents: list[str]
+    agents: list[AgentInfo]
+    auth_required: bool
