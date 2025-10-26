@@ -45,7 +45,21 @@
       <div class="chat-container">
         <!-- Header -->
         <header class="chat-header">
-          <h1 x-text="agentName"></h1>
+          <div class="header-left">
+            <h1 x-text="agentName"></h1>
+            <template x-if="agents.length > 1">
+              <select
+                :value="selectedAgent?.name"
+                @change="selectAgent($event.target.value)"
+                class="agent-selector"
+                title="Select agent"
+              >
+                <template x-for="agent in agents" :key="agent.name">
+                  <option :value="agent.name" x-text="agent.description"></option>
+                </template>
+              </select>
+            </template>
+          </div>
           <div class="header-buttons">
             <button @click="handleNewChat()" class="new-chat-button" title="New chat">
               +

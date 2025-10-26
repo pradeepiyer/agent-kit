@@ -11,6 +11,8 @@ marked.setOptions({
 function app() {
   return {
     // State
+    agents: [],
+    selectedAgent: null,
     agentName: 'Agent',
     token: null,
     sessionId: null,
@@ -27,9 +29,20 @@ function app() {
       // Fetch agent info
       const info = await this.getAgentInfo();
 
-      // Set agent name
-      if (info.agents.length > 0) {
-        this.agentName = info.agents[0].description;
+      // Store available agents
+      this.agents = info.agents || [];
+
+      // Set selected agent (from localStorage or first agent)
+      const savedAgentName = localStorage.getItem('selected_agent');
+      if (savedAgentName && this.agents.find(a => a.name === savedAgentName)) {
+        this.selectedAgent = this.agents.find(a => a.name === savedAgentName);
+      } else if (this.agents.length > 0) {
+        this.selectedAgent = this.agents[0];
+      }
+
+      // Set agent name and title
+      if (this.selectedAgent) {
+        this.agentName = this.selectedAgent.description;
         document.title = this.agentName;
       }
 
@@ -160,6 +173,23 @@ function app() {
       }
     },
 
+    // Handle agent selection
+    selectAgent(agentName) {
+      const agent = this.agents.find(a => a.name === agentName);
+      if (!agent) return;
+
+      this.selectedAgent = agent;
+      this.agentName = agent.description;
+      document.title = this.agentName;
+
+      // Save selection
+      localStorage.setItem('selected_agent', agentName);
+
+      // Clear conversation when switching agents
+      this.messages = [];
+      this.sessionId = null;
+    },
+
     // Handle logout
     handleLogout() {
       this.clearToken();
@@ -186,8 +216,12 @@ function app() {
 
     // API: Send message with SSE
     async sendMessage(query, sessionId, token, onEvent) {
+      if (!this.selectedAgent) {
+        throw new Error('No agent selected');
+      }
+
       const headers = this.buildHeaders(token);
-      const response = await fetch(`${API_URL}/hello`, {
+      const response = await fetch(`${API_URL}/${this.selectedAgent.name}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

@@ -101,6 +101,34 @@ body {
   font-weight: 600;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.agent-selector {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.agent-selector:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.agent-selector:focus {
+  border-color: #0066ff;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
+
 .header-buttons {
   display: flex;
   gap: 0.5rem;
