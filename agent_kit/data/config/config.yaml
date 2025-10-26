@@ -24,12 +24,10 @@ openai:
     default: 128000
 
   # Function-specific model overrides (agent/function -> model)
-  function_models:
-    "hello/hello": "gpt-5-mini"
+  function_models: {}
 
   # Use high effort for complex analysis tasks, minimal for simple operations
-  function_reasoning:
-    "hello/hello": "minimal"   # Simple greeting doesn't need deep thinking
+  function_reasoning: {}
 
   # Reasoning summary configuration
   reasoning_summary: true         # true = enable summaries with auto mode (default: false)

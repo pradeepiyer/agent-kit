@@ -75,7 +75,21 @@
           <div class="messages-inner">
             <template x-for="(message, index) in messages" :key="index">
               <div class="message" :class="`message-${message.role}`">
-                <div class="message-content" x-html="renderMarkdown(message.content)"></div>
+                <!-- Progress items (if any) -->
+                <template x-if="message.progressItems && message.progressItems.length > 0">
+                  <div class="progress-items">
+                    <template x-for="(item, itemIndex) in message.progressItems" :key="itemIndex">
+                      <div class="progress-item" x-text="item.text"></div>
+                    </template>
+                  </div>
+                </template>
+
+                <!-- Final content -->
+                <template x-if="message.content">
+                  <div class="message-content" x-html="renderMarkdown(message.content)"></div>
+                </template>
+
+                <!-- Streaming indicator -->
                 <template x-if="message.isStreaming">
                   <span class="streaming-indicator">...</span>
                 </template>

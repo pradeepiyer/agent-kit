@@ -193,6 +193,19 @@ body {
   word-wrap: break-word;
 }
 
+/* Progress items */
+.progress-items {
+  margin-bottom: 0.75rem;
+}
+
+.progress-item {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  padding: 0.25rem 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 /* Markdown styles */
 .message-content a {
   color: #0066ff;

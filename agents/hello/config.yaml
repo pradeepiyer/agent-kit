@@ -1,2 +1,10 @@
 # Hello Agent Configuration
 max_iterations: 10  # Override global default for web search capability
+
+# Function-specific model overrides
+function_models:
+  "hello/orchestrator": "gpt-5-mini"
+
+# Function-specific reasoning effort
+function_reasoning:
+  "hello/orchestrator": "medium"  # medium or high for visible reasoning traces

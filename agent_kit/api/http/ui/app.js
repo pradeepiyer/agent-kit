@@ -112,41 +112,39 @@ function app() {
       this.messages.push({ role: 'user', content });
       this.scrollToBottom();
 
-      // Add assistant message placeholder
-      this.messages.push({ role: 'assistant', content: '', isStreaming: true });
+      // Add assistant message placeholder with progressItems array
+      this.messages.push({ role: 'assistant', content: '', progressItems: [], isStreaming: true });
       this.scrollToBottom();
 
       this.isProcessing = true;
 
       try {
         await this.sendMessage(content, this.sessionId, this.token, (event) => {
+          const lastMsg = this.messages[this.messages.length - 1];
+          if (!lastMsg || lastMsg.role !== 'assistant') return;
+
           if (event.type === 'progress' && event.message) {
-            // Replace progress message
-            const lastMsg = this.messages[this.messages.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = event.message;
-              this.scrollToBottom();
-            }
+            // Append progress message to progressItems array
+            lastMsg.progressItems.push({ type: 'progress', text: event.message });
+            this.scrollToBottom();
+          } else if (event.type === 'reasoning' && event.message) {
+            // Append reasoning message to progressItems array
+            lastMsg.progressItems.push({ type: 'reasoning', text: event.message });
+            this.scrollToBottom();
           } else if (event.type === 'result' && event.data) {
-            // Replace with final result
-            const lastMsg = this.messages[this.messages.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = event.data.response;
-              lastMsg.isStreaming = false;
-              this.scrollToBottom();
-            }
+            // Set final result in content
+            lastMsg.content = event.data.response;
+            lastMsg.isStreaming = false;
+            this.scrollToBottom();
             if (event.data.session_id) {
               this.sessionId = event.data.session_id;
             }
             this.isProcessing = false;
           } else if (event.type === 'error') {
-            // Show error
-            const lastMsg = this.messages[this.messages.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = `Error: ${event.error || 'Unknown error'}`;
-              lastMsg.isStreaming = false;
-              this.scrollToBottom();
-            }
+            // Show error in content
+            lastMsg.content = `Error: ${event.error || 'Unknown error'}`;
+            lastMsg.isStreaming = false;
+            this.scrollToBottom();
             this.isProcessing = false;
           }
         });

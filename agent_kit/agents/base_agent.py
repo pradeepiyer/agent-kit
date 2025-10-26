@@ -179,7 +179,6 @@ class BaseAgent(ABC):
                 f"Iteration {iteration + 1}/{max_iterations} - Current input messages: {len(input_list)}, "
                 f"Instructions length: {len(instructions)}"
             )
-            await self.progress_handler.emit(f"Processing iteration {iteration + 1}/{max_iterations}")
 
             # Disable tools on last iteration if we have a response format
             tool_choice, tools_to_pass = (
