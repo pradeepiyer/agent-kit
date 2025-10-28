@@ -64,7 +64,7 @@ interfaces:
 
   # HTTP Server (supports REST API and/or MCP over HTTP)
   http:
-    enabled: true                  # Enable HTTP server
+    enabled: false                 # Enable HTTP server
     host: "127.0.0.1"              # Server host
     port: 8000                     # Server port
     cors_origins:

@@ -148,8 +148,6 @@ class SlashCommands:
                 table.add_row(cmd, desc)
 
             self.console.print(table)
-            self.console.print("\n[dim]Chat Mode:[/dim]")
-            self.console.print("[dim]Type any message to start chatting[/dim]")
 
     async def _handle_help(self, args: list[str]) -> None:
         """Handle /help command (async wrapper for registry)."""
